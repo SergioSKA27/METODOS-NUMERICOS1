@@ -200,6 +200,8 @@ float EquationS::BiseccionM(std::pair<float, float> interval, float error, bool 
 
     std::cout << "LA RAIZ ES : " << root << " ( aprox. )" << std::endl;
 
+    File.close();
+
     return root;
 }
 
@@ -507,6 +509,663 @@ float EquationS::SecanteM(float n, float n_1, float error, bool print, bool file
 
 EquationS::~EquationS()
 {
+}
+
+/*
+    Creamos una clase Numero para poder efectuar un mayor numero de opraciones aritmeticas 
+    ya sea con numeros reales, enteros , racionales e irracionales.
+    Ademas dicha clase nos permite expresar el resultado de una opracion de la manera exacta 
+    haciendo uso de fracciones para expresar los resultados.
+*/
+
+class Number
+{
+private:
+    float real_part;
+    int numerator, denominator; //Representacion como racional
+    bool is_rational;
+    bool is_constant;
+
+    /*
+        podemos usar alguna de las constantes mas conocidas 
+        declarando el objeto con su respectivo nombre:
+            
+            - π  = PI
+            - e = E o e
+            - √2  = SQRT2
+            - Φ = PHI
+    
+        *Nota: las claves unicamente deben contener dichos caracteres ya sea mayusculas o minusculas
+    */
+
+public:
+    Number();
+    Number(float real);       //Constructor reales
+    Number(float a, float b); //Constructor racional
+    Number(std::string key);  //constructor Irracional
+    //fracciones con irracionales
+    Number(std::string numerator, float denominator);       //  Irracional/real
+    Number(std::string numerator, std::string denominator); //  Irracional/Irracional
+    Number(float numerator, std::string denominator);       //  real/Irracional
+
+    friend std::ostream &operator<<(std::ostream &o, const Number n)
+    {
+        if (n.is_rational)
+            o << n.numerator << "/" << n.denominator;
+        else
+            o << n.real_part;
+
+        return o;
+    }
+
+    friend std::ostream &operator<<(std::ostream &o, const Number *n)
+    {
+        if (n->is_rational)
+            o << n->numerator << "/" << n->denominator;
+        else
+            o << n->real_part;
+
+        return o;
+    }
+
+    static void *operator new(size_t size);
+    static void *operator new[](size_t size);
+    void operator delete[](void *p);
+    void operator delete(void *p);
+
+    Number &simplify();
+
+    Number &operator=(const Number &x);
+    ~Number();
+};
+
+Number::Number()
+{
+    this->is_constant = false;
+    this->is_rational = false;
+    this->real_part = 0;
+    this->numerator = 0;
+    this->denominator = 1;
+}
+
+Number::Number(float real)
+{
+    this->is_constant = false;
+    this->is_rational = false;
+    this->real_part = real;
+    this->numerator = real;
+    this->denominator = 1;
+}
+
+Number::Number(float a, float b)
+{
+    this->is_constant = false;
+    this->is_rational = true;
+    this->real_part = a / b;
+    this->numerator = a;
+    this->denominator = b;
+}
+
+Number::Number(std::string key)
+{
+    const float Pi = M_PI, E = exp(1);
+    const float sqrt2 = M_SQRT2;
+    size_t pos, k;
+    std::string claves[] = {"pi", "e", "sqrt2", "phi"};
+
+    this->is_constant = true;
+    this->is_rational = false;
+    std::transform(key.begin(), key.end(), key.begin(), tolower);
+
+    for (size_t i = 0; i < 4; i++)
+    {
+        pos = key.find(claves[i]);
+        if (pos != std::string::npos)
+        {
+            k = i;
+            break;
+        }
+    }
+
+    if (pos == std::string::npos)
+        throw std::invalid_argument((key + " No existe :("));
+    else
+    {
+
+        if (k == 0)
+        {
+            this->real_part = Pi;
+            this->numerator = Pi;
+        }
+
+        if (k == 1)
+        {
+            this->real_part = E;
+            this->numerator = E;
+        }
+
+        if (k == 3)
+        {
+            this->real_part = sqrt2;
+            this->numerator = sqrt2;
+        }
+        if (k == 4)
+        {
+            this->real_part = 1.61803398875;
+            this->numerator = 1.61803398875;
+        }
+    }
+
+    this->denominator = 1;
+}
+
+Number &Number::simplify()
+{
+    bool is_simplifying = false;
+    if (this->numerator == this->denominator)
+    {
+        this->numerator = 1;
+        this->denominator = 1;
+        this->is_rational = false;
+        return *this;
+    }
+    else
+    {
+        for (int i = 2; i < this->numerator + 1; i++)
+        {
+            if (this->numerator % i == 0)
+            {
+                if (this->denominator % i == 0)
+                {
+                    this->numerator = this->numerator / i;
+                    this->denominator = this->denominator / i;
+                    is_simplifying = true;
+                    break;
+                }
+            }
+        }
+        if (!is_simplifying)
+            return *this;
+        else
+            this->simplify();
+    }
+    return *this;
+}
+
+Number &Number::operator=(const Number &x)
+{
+    this->denominator = x.denominator;
+    this->numerator = x.numerator;
+    this->is_constant = x.is_constant;
+    this->is_rational = x.is_rational;
+    this->real_part = x.real_part;
+
+    return *this;
+}
+
+static void *Number::operator new(size_t size)
+{
+    std::cout << "New" << std::endl;
+    void *p = std::malloc(size);
+
+    if (!p)
+    {
+        std::cerr << "Error al reservar memoria!";
+        throw std::bad_alloc();
+    }
+
+    std::cout << "New works" << std::endl;
+
+    return p;
+}
+
+void Number::operator delete(void *p)
+{
+    std::cout << "Delete" << std::endl;
+    free(p);
+}
+
+static void *Number::operator new[](size_t size)
+{
+    void *p;
+
+    p = std::malloc(size);
+
+    if (!p)
+    {
+        throw std::bad_alloc();
+    }
+    std::cout << "New works" << std::endl;
+
+    return p;
+}
+
+void Number::operator delete[](void *p)
+{
+    free(p);
+}
+Number::~Number()
+{
+}
+
+/*
+La clase Matriz funciona como un template es decir que podemos instanciar el objeto 
+Matriz con cualquier tipo las operaciones con matrices solo estan disponibles con tipos
+Numericos o objetos con los operadores aritmeticos sobrecargados
+*/
+
+template <class type>
+class Matriz
+{
+private:
+    type **Mat;
+    int filas;
+    int columnas;
+
+    inline Matriz<type> ExtractMat(type **Mat, int sz, int F, int C); //funcion para el Determinate
+    type Det(type **Mat, int sz);                                     //Calcula el determinante por cofactores
+
+    type brackethelp(type *fila, int col); //funcion de ayuda para el operador corche
+    int brcketaux, bracketaux2;            //variables auxiliares para indices en corchetes
+
+public:
+    Matriz(const type init, int filas, int columnas); //Para cualquier Matriz inicializada
+    Matriz(int filas, int columnas);                  //Para cualquier Matriz
+    Matriz(int size);                                 //Para Matrices cuadradas
+    Matriz();                                         //Constructor vacio
+
+    Matriz &resize(int filas, int columnas); //Redimensionar Matriz sin perder los datos
+
+    void print(); //Imprimir la matriz
+
+    type Determinante(); //Devuelve el determinante de la matriz
+
+    Matriz<type> transp(); //Devuelve la transpuesta de la matriz
+    Matriz<type> adj();    //devuelve la adjunta de la matriz
+
+    Matriz<type> inversa(); //Retorna la inversa de una matriz (mediante la ajunta de la matriz)
+
+    Matriz<type> operator+(const Matriz<type> &Mat2);  //Suma de matrices
+    Matriz<type> operator-(const Matriz<type> &Mat2);  //Resta de matrices
+    Matriz<type> operator*(const Matriz<type> &Mat2);  //Multiplicacion de matrices
+    Matriz<type> &operator=(const Matriz<type> &Mat2); //Operador de asignacion
+
+    type *operator[](const int index);        //Operador corchete para filas
+    type operator[](short int index2);        //Operador corchete para columnas
+    Matriz<type> &operator=(const type Data); //Para asignar valor a las casillas de la matriz
+
+    ~Matriz();
+};
+
+template <class type>
+Matriz<type>::Matriz(int filas, int columnas)
+{
+    this->Mat = new type *[filas];
+
+    for (int i = 0; i < filas; i++)
+    {
+        this->Mat[i] = new type[columnas];
+    }
+    this->filas = filas;
+    this->columnas = columnas;
+}
+
+template <class type>
+Matriz<type>::Matriz(int size)
+{
+    this->Mat = new type *[size];
+
+    for (int i = 0; i < size; i++)
+    {
+        this->Mat[i] = new type[size];
+    }
+    this->filas = size;
+    this->columnas = size;
+}
+
+template <class type>
+Matriz<type>::Matriz(const type init, int filas, int columnas)
+{
+    this->Mat = new type *[filas];
+
+    for (int i = 0; i < filas; i++)
+    {
+        this->Mat[i] = new type[columnas];
+    }
+
+    for (int i = 0; i < filas; i++)
+    {
+        for (int j = 0; j < columnas; j++)
+        {
+            this->Mat[i][j] = init;
+        }
+    }
+
+    this->filas = filas;
+    this->columnas = columnas;
+}
+
+template <class type>
+Matriz<type>::Matriz()
+{
+    this->Mat = NULL;
+    this->filas = 0;
+    this->columnas = 0;
+}
+
+template <class type>
+Matriz<type> &Matriz<type>::resize(int filas, int columnas)
+{
+    type **newMat;
+
+    newMat = new type *[filas];
+
+    for (int i = 0; i < filas; i++)
+    {
+        newMat[i] = new type[columnas];
+    }
+
+    for (int i = 0; i < this->filas; i++)
+    {
+        for (int j = 0; j < this->columnas; j++)
+        {
+            if (i < this->filas && j < this->columnas)
+                newMat[i][j] = this->Mat[i][j];
+        }
+    }
+
+    this->Mat = newMat;
+    this->filas = filas;
+    this->columnas = columnas;
+
+    return *this;
+}
+
+template <class type>
+inline Matriz<type> Matriz<type>::ExtractMat(type **Mat, int sz, int F, int C)
+{
+    Matriz<type> result(sz - 1, sz - 1);
+    int k = 0, l = 0;
+
+    for (int i = 0; i < sz; i++)
+    {
+        l = 0;
+        for (int j = 0; j < sz; j++)
+        {
+            if (i != F && j != C)
+            { //Si no estamos en la fila y la columna que se van a eliminar asignamos
+                //el valor en esa posicion al valor k,l de la matriz resultado
+                result.Mat[k][l] = Mat[i][j];
+                l++; //iteramos las columnas de la matriz resultado
+            }
+        }
+        if (i != F) //si no estamos en la fila que se va a eliminar iteramos k
+            k++;    //iteramos las filas de la matriz resultado
+    }
+
+    return result;
+}
+
+template <class type>
+type Matriz<type>::Det(type **Mat, int sz)
+{
+
+    type detval;
+    type dt;
+
+    detval = 0;
+
+    if (sz == 2)
+    {
+        detval = ((Mat[0][0] * Mat[1][1]) - (Mat[0][1] * Mat[1][0]));
+        return detval;
+    }
+    else
+    {
+        Matriz<type> res(sz - 1, sz - 1);
+
+        for (int i = 0; i < sz; i++)
+        {
+            res = this->ExtractMat(Mat, sz, 0, i);
+
+            dt = this->Det(res.Mat, sz - 1);
+
+            if (i % 2 == 0)
+            {
+                detval += Mat[i][0] * dt;
+            }
+            else
+            {
+                detval += (Mat[i][0] * dt) * -1;
+            }
+        }
+        return detval;
+    }
+}
+
+template <class type>
+type Matriz<type>::Determinante()
+{
+    if (this->filas != this->columnas)
+        throw std::invalid_argument("La matriz no es cuadrada");
+
+    return this->Det(this->Mat, this->filas);
+}
+
+template <class type>
+Matriz<type> Matriz<type>::transp()
+{
+    Matriz<type> T(this->columnas, this->filas);
+
+    for (int i = 0; i < this->columnas; i++)
+    {
+        for (int j = 0; j < this->filas; j++)
+        {
+            T.Mat[i][j] = this->Mat[j][i];
+        }
+    }
+
+    return T;
+}
+
+template <class type>
+Matriz<type> Matriz<type>::adj()
+{
+    Matriz<type> AD(this->filas, this->columnas);
+    Matriz<type> aux(this->filas - 1, this->columnas - 1);
+
+    for (int i = 0; i < this->columnas; i++)
+    {
+
+        for (int j = 0; j < this->filas; j++)
+        {
+            aux = this->ExtractMat(this->Mat, this->filas, i, j);
+            if (((i + 1) + (j + 1)) % 2 == 0)
+            {
+                AD.Mat[i][j] = aux.Determinante();
+            }
+            else
+            {
+                AD.Mat[i][j] = aux.Determinante() * -1;
+            }
+        }
+    }
+
+    return AD;
+}
+
+template <class type>
+Matriz<type> Matriz<type>::inversa()
+{ /*Calculamos la inversa sabiendo que la inversa de una matriz A es:
+            trans(adj(A))
+    inv(A)= -------------
+                |A|
+    Donde |A| representa el determiante de la matriz.
+    (la  Inversa  de  la  matriz  solo es  aplicable  apartir  del  conjuto 
+    de los numeros reales(Naturales, Enteros, Racionales e Irracionales no))
+*/
+    if (this->Determinante() == 0)
+        throw std::invalid_argument("La matriz no tiene inversa(Determinante igual a 0\n");
+
+    Matriz<type> Inv, aux;
+
+    type det = this->Determinante();
+
+    aux = this->adj();
+
+    Inv = aux.transp();
+
+    for (int i = 0; i < Inv.filas; i++)
+    {
+        for (int j = 0; j < Inv.columnas; j++)
+        {
+            Inv.Mat[i][j] = Inv.Mat[i][j] / det;
+        }
+    }
+
+    return Inv;
+}
+
+template <class type>
+void Matriz<type>::print()
+{
+    if (Mat == NULL)
+        throw std::invalid_argument("La Matriz est de tamano 0\n");
+
+    for (int i = 0; i < this->filas; i++)
+    {
+        for (int j = 0; j < this->columnas; j++)
+        {
+            std::cout << this->Mat[i][j] << "\t";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+}
+
+template <class type>
+Matriz<type> Matriz<type>::operator+(const Matriz<type> &Mat2)
+{
+    if (this->filas != Mat2.filas || this->columnas != Mat2.columnas)
+        throw std::invalid_argument("Las Matrices no tienen el mismo tamano\n");
+    Matriz<type> Result(this->filas, this->columnas);
+
+    for (int i = 0; i < this->filas; i++)
+    {
+        for (int j = 0; j < this->columnas; j++)
+        {
+            Result.Mat[i][j] = this->Mat[i][j] + Mat2.Mat[i][j];
+        }
+    }
+
+    return Result;
+}
+
+template <class type>
+Matriz<type> Matriz<type>::operator-(const Matriz<type> &Mat2)
+{
+    if (this->filas != Mat2.filas || this->columnas != Mat2.columnas)
+        throw std::invalid_argument("Las Matrices no tienen el mismo tamano\n");
+    Matriz<type> Result(this->filas, this->columnas);
+
+    for (int i = 0; i < this->filas; i++)
+    {
+        for (int j = 0; j < this->columnas; j++)
+        {
+            Result.Mat[i][j] = this->Mat[i][j] - Mat2.Mat[i][j];
+        }
+    }
+
+    return Result;
+}
+
+template <class type>
+Matriz<type> Matriz<type>::operator*(const Matriz<type> &Mat2)
+{
+    if (this->filas != Mat2.columnas)
+        throw std::invalid_argument("Las Matrices no se pueden multiplicar\n");
+    Matriz<type> Result(this->filas, Mat2.columnas);
+
+    type sum; //si se planea usar objetos estos tienen que tener un 0 y sobrecargar el operador = para poder asignarlo
+
+    sum = 0;
+
+    for (int i = 0; i < this->filas; i++)
+    {
+        sum = 0;
+        for (int j = 0; j < Mat2.columnas; j++)
+        {
+            for (int k = 0; k < Mat2.columnas; k++)
+            {
+                sum = sum + (this->Mat[i][k] * Mat2.Mat[k][j]);
+                Result.Mat[k][j] = sum;
+            }
+        }
+    }
+
+    return Result;
+}
+
+template <class type>
+Matriz<type> &Matriz<type>::operator=(const Matriz<type> &Mat2)
+{
+    if (this->filas != Mat2.filas || this->columnas != Mat2.columnas)
+        this->resize(Mat2.filas, Mat2.columnas);
+
+    for (int i = 0; i < this->filas; i++)
+    {
+        for (int j = 0; j < this->columnas; j++)
+        {
+            this->Mat[i][j] = Mat2.Mat[i][j];
+        }
+    }
+
+    this->filas = Mat2.filas;
+    this->columnas = Mat2.columnas;
+
+    return *this;
+}
+
+template <class type>
+type Matriz<type>::brackethelp(type *fila, int col)
+{
+    return fila[col];
+}
+
+template <class type>
+type *Matriz<type>::operator[](const int index)
+{
+    if (index >= this->filas)
+        throw std::out_of_range("Fuera del rango de la matriz\n");
+    this->brcketaux = index;
+    return this->Mat[index];
+}
+
+template <class type>
+type Matriz<type>::operator[](short int index2)
+{
+    if (index2 >= this->columnas)
+        throw std::out_of_range("Fuera del rango de la matriz\n");
+
+    this->bracketaux2 = index2;
+    return (this->brackethelp((*this)[this->brcketaux], index2));
+}
+
+template <class type>
+Matriz<type> &Matriz<type>::operator=(const type Data)
+{
+    this->Mat[brcketaux][bracketaux2] = Data;
+    return *this;
+}
+
+template <class type>
+Matriz<type>::~Matriz()
+{
+    /*for (int i = 0; i < this->filas; i++)
+    {
+        delete this->Mat[i];
+    }
+    delete this->Mat;*/
 }
 
 class Menu
@@ -1101,11 +1760,21 @@ Menu::~Menu()
 int main(int argc, char const *argv[])
 {
 
-    Menu m;
+    //Menu m;
 
-    while (1)
-        if (m.Main_menu() == 4)
-            break;
+    //while (1)
+    //    if (m.Main_menu() == 4)
+    //        break;
+
+    Number x(8, 24);
+    //Number *p = new Number[5]();
+    Matriz<Number> A(x, 3, 3);
+    //x.simplify();
+    //p->simplify();
+    //std::cout << p << std::endl;
+    A.print();
+
+    //delete[] p;
 
     return 0;
 }
