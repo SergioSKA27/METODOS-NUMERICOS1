@@ -551,7 +551,14 @@ public:
     friend std::ostream &operator<<(std::ostream &o, const Number n)
     {
         if (n.is_rational)
-            o << n.numerator << "/" << n.denominator;
+        {
+            if (n.numerator > 0 && n.denominator > 0)
+                o << n.numerator << "/" << n.denominator;
+            else if (n.numerator < 0 && n.denominator < 0)
+                o << -1 * n.numerator << "/" << -1 * n.denominator;
+            else
+                o << '-' << abs(n.numerator) << "/" << abs(n.denominator);
+        }
         else
             o << n.real_part;
 
@@ -561,7 +568,14 @@ public:
     friend std::ostream &operator<<(std::ostream &o, const Number *n)
     {
         if (n->is_rational)
-            o << n->numerator << "/" << n->denominator;
+        {
+            if (n->numerator > 0 && n->denominator > 0)
+                o << n->numerator << "/" << n->denominator;
+            else if (n->numerator < 0 && n->denominator < 0)
+                o << -1 * n->numerator << "/" << -1 * n->denominator;
+            else
+                o << '-' << abs(n->numerator) << "/" << abs(n->denominator);
+        }
         else
             o << n->real_part;
 
@@ -576,6 +590,25 @@ public:
     Number &simplify();
 
     Number &operator=(const Number &x);
+    Number &operator=(const float x);
+    Number &operator=(const std::pair<float, float> &x);
+
+    Number operator+(const Number &x);
+    Number operator+(const float &x);
+
+    Number &operator+=(const Number &x);
+    Number &operator+=(const float &x);
+
+    Number operator-(const Number &x);
+    Number operator-(const float &x);
+
+    Number operator*(const Number &x);
+    Number operator*(const float &x);
+
+    Number operator/(const Number &x);
+    Number operator/(const float &x);
+
+    Number make_fraction(float &a, float &b);
     ~Number();
 };
 
@@ -599,8 +632,11 @@ Number::Number(float real)
 
 Number::Number(float a, float b)
 {
+    if (b == 0)
+        throw std::invalid_argument("Division por 0 !");
     this->is_constant = false;
-    this->is_rational = true;
+    if (b != 1)
+        this->is_rational = true;
     this->real_part = a / b;
     this->numerator = a;
     this->denominator = b;
@@ -703,6 +739,262 @@ Number &Number::operator=(const Number &x)
     return *this;
 }
 
+Number &Number::operator=(const float x)
+{
+    this->denominator = 1;
+    this->numerator = x;
+    this->is_constant = false;
+    this->is_rational = false;
+    this->real_part = x;
+
+    return *this;
+}
+
+Number Number::operator+(const Number &x)
+{
+
+    if (this->is_rational || x.is_rational)
+    {
+        if (x.denominator == this->denominator)
+        {
+            Number r(this->numerator + x.numerator, this->denominator);
+            return r.simplify();
+        }
+        else
+        {
+            float a = this->numerator * x.denominator;
+            float b = this->denominator * x.numerator;
+            Number r(a + b, this->denominator * x.denominator);
+            return r.simplify();
+        }
+    }
+
+    float y = this->real_part + x.real_part;
+    Number r(y);
+
+    return r;
+}
+
+Number Number::operator+(const float &x)
+{
+
+    if (this->is_rational || (((int)x) == x))
+    {
+        if (this->denominator == 1)
+        {
+            Number r(this->numerator + x, this->denominator);
+            return r.simplify();
+        }
+        else
+        {
+            float a = this->numerator;
+            float b = this->denominator * x;
+            Number r(a + b, this->denominator * 1);
+            return r.simplify();
+        }
+    }
+
+    float y = this->real_part + x;
+    Number r(y);
+
+    return r;
+}
+
+Number &Number::operator+=(const Number &x)
+{
+
+    if (this->is_rational || x.is_rational)
+    {
+        if (x.denominator == this->denominator)
+        {
+            this->numerator += x.numerator;
+
+            return *this;
+        }
+        else
+        {
+            float a = this->numerator * x.denominator;
+            float b = this->denominator * x.numerator;
+            this->numerator = a + b;
+            this->denominator = this->denominator * x.denominator;
+            return *this;
+        }
+    }
+
+    float y = this->real_part + x.real_part;
+    Number r(y);
+
+    (*this) = r;
+
+    return *this;
+}
+
+Number &Number::operator+=(const float &x)
+{
+
+    if (this->is_rational || (((int)x) == x))
+    {
+        if (this->denominator == 1)
+        {
+            Number r(this->numerator + x, this->denominator);
+            r.simplify();
+            (*this) = r;
+            return *this;
+        }
+        else
+        {
+            float a = this->numerator;
+            float b = this->denominator * x;
+            Number r(a + b, this->denominator * 1);
+            r.simplify();
+            (*this) = r;
+            return *this;
+        }
+    }
+
+    float y = this->real_part + x;
+    Number r(y);
+    (*this) = r;
+    return *this;
+}
+
+Number Number::operator-(const Number &x)
+{
+
+    if (this->is_rational || x.is_rational)
+    {
+        if (x.denominator == this->denominator)
+        {
+            Number r(this->numerator - x.numerator, this->denominator);
+            return r.simplify();
+        }
+        else
+        {
+            float a = this->numerator * x.denominator;
+            float b = this->denominator * x.numerator;
+            Number r(a - b, this->denominator * x.denominator);
+            return r.simplify();
+        }
+    }
+
+    float y = this->real_part - x.real_part;
+    Number r(y);
+
+    return r;
+}
+
+Number Number::operator-(const float &x)
+{
+
+    if (this->is_rational || (((int)x) == x))
+    {
+        if (this->denominator == 1)
+        {
+            Number r(this->numerator - x, this->denominator);
+            return r.real_part;
+        }
+        else
+        {
+            float a = this->numerator;
+            float b = this->denominator * x;
+            Number r(a - b, this->denominator * 1);
+            return r.real_part;
+        }
+    }
+
+    float y = this->real_part - x;
+    Number r(y);
+    return r;
+}
+
+Number Number::operator*(const Number &x)
+{
+
+    if (this->is_rational || x.is_rational)
+    {
+        Number r(this->numerator * x.numerator, this->denominator * x.denominator);
+        return r.simplify();
+    }
+
+    float y = this->real_part * x.real_part;
+    Number r(y);
+
+    return r;
+}
+
+Number Number::operator*(const float &x)
+{
+
+    if (this->is_rational || (((int)x) == x))
+    {
+
+        Number r(this->numerator * x, this->denominator);
+        return r.real_part;
+    }
+
+    float y = this->real_part * x;
+    Number r(y);
+
+    return r;
+}
+
+Number Number::operator/(const Number &x)
+{
+    if (x.real_part == 0)
+    {
+        throw std::invalid_argument("Division por 0!");
+    }
+
+    if (this->is_rational || x.is_rational)
+    {
+
+        float a = this->denominator * x.numerator;
+        float b = this->numerator * x.denominator;
+        Number r(a, b);
+        return r.simplify();
+    }
+
+    float y = this->real_part / x.real_part;
+    Number r(y);
+
+    return r;
+}
+
+Number Number::operator/(const float &x)
+{
+    if (x == 0)
+    {
+        throw std::invalid_argument("Division por 0!");
+    }
+
+    if (this->is_rational || (((int)x) == x))
+    {
+        float a = this->denominator * x;
+        float b = this->numerator;
+        Number r(a, b);
+        return r.real_part;
+    }
+
+    float y = this->real_part / x;
+    Number r(y);
+
+    return r;
+}
+
+Number &Number::operator=(const std::pair<float, float> &x)
+{
+    Number r(x.first, x.second);
+
+    (*this) = r;
+    return *this;
+}
+
+Number Number::make_fraction(float &a, float &b)
+{
+    Number x(a, b);
+    return x;
+}
+
 static void *Number::operator new(size_t size)
 {
     std::cout << "New" << std::endl;
@@ -721,7 +1013,7 @@ static void *Number::operator new(size_t size)
 
 void Number::operator delete(void *p)
 {
-    std::cout << "Delete" << std::endl;
+    //std::cout << "Delete" << std::endl;
     free(p);
 }
 
@@ -735,7 +1027,7 @@ static void *Number::operator new[](size_t size)
     {
         throw std::bad_alloc();
     }
-    std::cout << "New works" << std::endl;
+    //std::cout << "New works" << std::endl;
 
     return p;
 }
@@ -744,6 +1036,7 @@ void Number::operator delete[](void *p)
 {
     free(p);
 }
+
 Number::~Number()
 {
 }
@@ -800,11 +1093,14 @@ public:
 template <class type>
 Matriz<type>::Matriz(int filas, int columnas)
 {
-    this->Mat = new type *[filas];
-
-    for (int i = 0; i < filas; i++)
+    if (this->filas != 1 && this->columnas != 1)
     {
-        this->Mat[i] = new type[columnas];
+        this->Mat = new type *[filas];
+
+        for (int i = 0; i < filas; i++)
+        {
+            this->Mat[i] = new type[columnas];
+        }
     }
     this->filas = filas;
     this->columnas = columnas;
@@ -912,8 +1208,12 @@ type Matriz<type>::Det(type **Mat, int sz)
 
     type detval;
     type dt;
+    std::vector<type> v;
 
     detval = 0;
+
+    if (sz == 1)
+        return Mat[0][0];
 
     if (sz == 2)
     {
@@ -927,18 +1227,33 @@ type Matriz<type>::Det(type **Mat, int sz)
         for (int i = 0; i < sz; i++)
         {
             res = this->ExtractMat(Mat, sz, 0, i);
+            // res.print();
 
             dt = this->Det(res.Mat, sz - 1);
 
+            //std::cout << "det -> " << dt << std::endl;
+
             if (i % 2 == 0)
             {
-                detval += Mat[i][0] * dt;
+                v.push_back(Mat[0][i] * dt);
+                //std::cout << Mat[0][i] * dt << std::endl;
+                //std::cout << "+" << Mat[0][i] << "*" << dt << std::endl;
             }
             else
             {
-                detval += (Mat[i][0] * dt) * -1;
+                type men;
+                men = -1;
+
+                v.push_back((men * (Mat[0][i] * dt)));
+                //std::cout << (men * (Mat[0][i] * dt)) << std::endl;
+                //std::cout << "-(" << Mat[0][i] << "*" << dt << ")" << std::endl;
             }
+
+            //std::cout << "detval = " << detval << std::endl;
         }
+
+        for (int k = 0; k < v.size(); k++)
+            detval = detval + v[k];
         return detval;
     }
 }
@@ -991,7 +1306,7 @@ Matriz<type> Matriz<type>::adj()
         }
     }
 
-    return AD;
+    return AD.transp();
 }
 
 template <class type>
@@ -1030,7 +1345,7 @@ template <class type>
 void Matriz<type>::print()
 {
     if (Mat == NULL)
-        throw std::invalid_argument("La Matriz est de tamano 0\n");
+        throw std::invalid_argument("La Matriz es de tamano 0\n");
 
     for (int i = 0; i < this->filas; i++)
     {
@@ -1168,6 +1483,28 @@ Matriz<type>::~Matriz()
     delete this->Mat;*/
 }
 
+template <class T>
+class Linear_equation
+{
+private:
+    Matriz<T> Coef_Matriz;
+    Matriz<T> vector_indp;
+
+public:
+    Linear_equation(Matriz<T> MatCoef, Matriz<T> vector_indp);
+    ~Linear_equation();
+};
+template <class T>
+Linear_equation<T>::Linear_equation(Matriz<T> MatCoef, Matriz<T> vector_indp)
+{
+    this->Coef_Matriz = MatCoef;
+    this->vector_indp = vector_indp.transp();
+}
+template <class T>
+Linear_equation<T>::~Linear_equation()
+{
+}
+
 class Menu
 {
 private:
@@ -1189,11 +1526,17 @@ private:
 
     int function_submenu1; // Sub menu de ecuaciones para el submenu 1
 
+    int op_submenu_2; //Sub menu sistemas de ecuaciones
+    int op_metodos_Exactos;
+    int op_metodos_iter;
+
     std::vector<float> readNumeric_input(int argsN); //lee una linea y la retorna como un string
     bool read_input(std::string find);               // lee un input y busca una subcadena(find) retorna true si existe una ocurrencia
 
 public:
-    Menu(/* args */);
+    Menu();
+    template <class F>
+    Matriz<F> read_matrix(size_t filas, size_t columnas, bool n); //lee una matriz de n * m y retorna la matriz
 
     int Main_menu();
 
@@ -1203,6 +1546,13 @@ public:
     void Menu_FalsaPos(int equa);
     void Menu_Newton(int equa);
     void Menu_Secante(int equa);
+
+    void Menu_sistemas_ecuaciones();
+    void Menu_metodos_exactos();
+    void Menu_inversa_particionado();
+    void Menu_Gausss_JordanP();
+
+    void Menu_metodos_iterativos();
 
     ~Menu();
 };
@@ -1216,7 +1566,7 @@ Menu::Menu()
 
 std::vector<float> Menu::readNumeric_input(int argsN)
 { //Lee una entrada numerica con un numero n de argumentos y retorna un vector con dichos elementos
-    //*si el usuario introduce mas de los N argumentos dichos seran descartados
+    //*si el usuario introduce mas de los N argumentos, dichos seran descartados
     std::string s = "";
     char line[100];
     std::vector<float> v;
@@ -1288,6 +1638,96 @@ bool Menu::read_input(std::string find)
         return true;
 
     return false;
+}
+
+template <class F>
+Matriz<F> Menu::read_matrix(size_t filas, size_t columnas, bool n)
+{
+    std::vector<std::string> v;
+    std::vector<std::vector<float>> m;
+    Matriz<F> Mat(filas, columnas);
+
+    for (size_t i = 0; i < filas; i++)
+    {
+        std::string s;
+        std::getline(std::cin, s);
+        v.push_back(s);
+    }
+
+    std::string aux = "", d = "", nu = "";
+    for (int i = 0; i < filas; i++)
+    {
+        int k = 0;
+        std::vector<float> x;
+        for (int j = 0; j < v[i].size() && k < columnas; j++)
+        {
+
+            if ((v[i][j] - '0' >= 0 && v[i][j] - '0' <= 9) || (v[i][j] == '.') || (v[i][j] == '-') || (v[i][j] == '/'))
+            {
+                if (v[i][j] != '/')
+                    aux += v[i][j];
+                else
+                {
+                    nu = aux;
+                    aux += v[i][j];
+
+                    int t = j + 1;
+                    while (t < v[i].size() && (v[i][t] != ' ' || v[i][t] != ',' || d == ""))
+                    {
+                        d += v[i][t];
+                        t++;
+                    }
+                }
+            }
+
+            if (v[i][j] == ' ' || v[i][j] == ',' || j == v[i].size() - 1)
+            {
+                try
+                {
+                    //std::cout << "Insert: " << aux << std::endl;
+                    if (aux.find('/') == std::string::npos)
+                        Mat[i][k] = std::stof(aux);
+                    else
+                    {
+                        float den, nume;
+                        try
+                        {
+                            den = std::stof(d);
+                            nume = std::stof(nu);
+                        }
+                        catch (const std::exception &e)
+                        {
+                            throw std::invalid_argument("invalid input frac!");
+                        }
+
+                        Number frac;
+                        if (n)
+                        {
+                            frac = std::make_pair(nume, den);
+                            //Mat[i][k] = frac;
+                        }
+                        else
+                            Mat[i][k] = nume / den;
+
+                        nu = "";
+                        d = "";
+                    }
+                    aux = "";
+                    k++;
+                }
+                catch (const std::exception &e)
+                {
+                    throw std::invalid_argument("invalid input!");
+                }
+            }
+        }
+    }
+
+    std::cout << "matrix :" << std::endl;
+
+    Mat.print();
+
+    return Mat;
 }
 
 int Menu::Main_menu()
@@ -1753,6 +2193,118 @@ void Menu::Menu_Secante(int equa)
     } while (1);
 }
 
+void Menu::Menu_sistemas_ecuaciones()
+{
+    do
+    {
+        std::system(LIMPIAR);
+        std::cout << "------------------------------------------------------------" << std::endl;
+        std::cout << "|            SISTEMAS DE ECUACIONES LINEALES               |" << std::endl;
+        std::cout << "------------------------------------------------------------" << std::endl;
+        std::cout << "| 1 . METODOS EXACTOS                                      |" << std::endl;
+        std::cout << "|----------------------------------------------------------|" << std::endl;
+        std::cout << "| 2 . METODOS ITERATIVOS                                   |" << std::endl;
+        std::cout << "------------------------------------------------------------" << std::endl;
+
+        std::vector<float> v;
+        do
+        {
+
+            std::cout << "Ingrese una opcion del menu(numero): "; // << std::endl;
+
+            v = this->readNumeric_input(1);
+
+            if (v.size() >= 1 && ((((int)v[0]) >= 1) && (((int)v[0]) <= 2)))
+            {
+                break;
+            }
+        } while (1);
+
+        do
+        {
+            this->op_submenu_2 = ((int)v[0]);
+
+            switch (((int)v[0])) //Metodo seleccionado
+            {
+            case 1:
+                this->Menu_metodos_exactos();
+                break;
+
+            case 2:
+                //this->Menu_metodos_iterativos();
+                break;
+
+            default:
+                break;
+            }
+
+            std::cout << "¿Deseas volver al menu anterior?(S/N) : ";
+            if (!this->read_input("s"))
+                break;
+        } while (1);
+
+        std::cout << "¿Deseas probar otro metodo?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
+
+    } while (1);
+}
+
+void Menu::Menu_metodos_exactos()
+{
+    do
+    {
+        std::system(LIMPIAR);
+        std::cout << "------------------------------------------------------------" << std::endl;
+        std::cout << "|                SOLUCIONES DE ECUACIONES                  |" << std::endl;
+        std::cout << "------------------------------------------------------------" << std::endl;
+        std::cout << "| 1 . INVERSION DE MATRICES PARTICIONADO                   |" << std::endl;
+        std::cout << "|----------------------------------------------------------|" << std::endl;
+        std::cout << "| 2 . GAUSS-JORDAN PARTICIONADO                            |" << std::endl;
+        std::cout << "|----------------------------------------------------------|" << std::endl;
+        std::cout << "| 3 . METODO DE INTERCAMBIO                                |" << std::endl;
+        std::cout << "------------------------------------------------------------" << std::endl;
+
+        std::vector<float> v;
+        int op;
+        do
+        {
+
+            std::cout << "Ingrese una opcion del menu(numero): "; // << std::endl;
+
+            v = this->readNumeric_input(1);
+
+            if (v.size() >= 1 && ((((int)v[0]) >= 1) && (((int)v[0]) <= 3)))
+            {
+                break;
+            }
+        } while (1);
+
+        do
+        {
+            this->op_metodos_Exactos = ((int)v[0]);
+
+            switch (((int)v[0])) //Metodo seleccionado
+            {
+            case 0:
+                break;
+
+            default:
+                break;
+            }
+
+            std::cout << "¿Deseas probar otro metodo?(S/N) : ";
+            if (!this->read_input("s"))
+                break;
+        } while (1);
+
+        std::cout << "¿Deseas volver al menu anterior?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
+
+    } while (1);
+}
+
 Menu::~Menu()
 {
 }
@@ -1760,21 +2312,17 @@ Menu::~Menu()
 int main(int argc, char const *argv[])
 {
 
-    //Menu m;
+    Menu m;
 
     //while (1)
     //    if (m.Main_menu() == 4)
     //        break;
+    Matriz<float> A(2);
+    A = m.read_matrix<float>(2, 2, false);
 
-    Number x(8, 24);
-    //Number *p = new Number[5]();
-    Matriz<Number> A(x, 3, 3);
-    //x.simplify();
-    //p->simplify();
-    //std::cout << p << std::endl;
-    A.print();
+    //A.adj().print();
 
-    //delete[] p;
+    std::cout << A.Determinante() << std::endl;
 
     return 0;
 }
