@@ -1083,9 +1083,21 @@ public:
     Matriz<type> operator*(const Matriz<type> &Mat2);  //Multiplicacion de matrices
     Matriz<type> &operator=(const Matriz<type> &Mat2); //Operador de asignacion
 
+    Matriz<type> extrac_partition(size_t fila_init, size_t column_init, size_t fila_end, size_t colend);
+
     type *operator[](const int index);        //Operador corchete para filas
     type operator[](short int index2);        //Operador corchete para columnas
     Matriz<type> &operator=(const type Data); //Para asignar valor a las casillas de la matriz
+
+    int size_f()
+    {
+        return this->filas;
+    }
+
+    int size_c()
+    {
+        return this->columnas;
+    }
 
     ~Matriz();
 };
@@ -1264,6 +1276,9 @@ type Matriz<type>::Determinante()
     if (this->filas != this->columnas)
         throw std::invalid_argument("La matriz no es cuadrada");
 
+    if (this->filas == 1 && this->columnas == 1)
+        return this->Mat[0][0];
+
     return this->Det(this->Mat, this->filas);
 }
 
@@ -1311,7 +1326,8 @@ Matriz<type> Matriz<type>::adj()
 
 template <class type>
 Matriz<type> Matriz<type>::inversa()
-{ /*Calculamos la inversa sabiendo que la inversa de una matriz A es:
+{
+    /*Calculamos la inversa sabiendo que la inversa de una matriz A es:
             trans(adj(A))
     inv(A)= -------------
                 |A|
@@ -1338,7 +1354,7 @@ Matriz<type> Matriz<type>::inversa()
         }
     }
 
-    return Inv;
+    return Inv.transp();
 }
 
 template <class type>
@@ -1473,15 +1489,51 @@ Matriz<type> &Matriz<type>::operator=(const type Data)
     return *this;
 }
 
+//Extrae una partcion de una matriz  introduciendo la fila y comluna  donde inicia
+//y donde acaba  dicha partcion la retorna como una matriz nueva
+template <class type>
+Matriz<type> Matriz<type>::extrac_partition(size_t fila_init, size_t column_init, size_t fila_End, size_t column_end)
+{
+    int fi = ((fila_End - fila_init) + 1);
+    int col = ((column_end - column_init) + 1);
+    Matriz<type> Res(0, fi, col);
+
+    //Res.print();
+
+    //std::cout << "filas: " << fi << "col: " << col << std::endl;
+
+    int t = 0;
+    for (int i = fila_init; i <= fila_End && this->Mat[i]; i++)
+    {
+        int k = 0;
+        for (int j = column_init; j <= column_end && this->Mat[i][j]; j++)
+        {
+            Res[t][k] = this->Mat[i][j];
+            //if(i >= fila_init && j >= column_init)
+            //std::cout << "->" << this->Mat[i][j] << '\t';
+            k++;
+        }
+        std::cout << std::endl;
+        t++;
+    }
+
+    return Res;
+}
+
 template <class type>
 Matriz<type>::~Matriz()
 {
-    /*for (int i = 0; i < this->filas; i++)
+    if (sizeof(type) != sizeof(Number))
     {
-        delete this->Mat[i];
+        for (int i = 0; i < this->filas; i++)
+        {
+            delete[] this->Mat[i];
+        }
+        delete[] this->Mat;
     }
-    delete this->Mat;*/
 }
+
+/*Clase para representar sistemas de ecuaciones lineales*/
 
 template <class T>
 class Linear_equation
@@ -1492,14 +1544,74 @@ private:
 
 public:
     Linear_equation(Matriz<T> MatCoef, Matriz<T> vector_indp);
+    Matriz<T> Inverse_partition(int fila_init, int column_init);
     ~Linear_equation();
 };
+
 template <class T>
 Linear_equation<T>::Linear_equation(Matriz<T> MatCoef, Matriz<T> vector_indp)
 {
     this->Coef_Matriz = MatCoef;
     this->vector_indp = vector_indp.transp();
 }
+
+template <class T>
+Matriz<T> Linear_equation<T>::Inverse_partition(int fila_init, int column_init)
+{
+    if (fila_init == this->Coef_Matriz.size_f())
+    {
+        std::cout << "No se pude obtener la inversa de la matriz , no hay mas particiones posibles!" << std::endl;
+        return this->Coef_Matriz;
+    }
+    if (this->Coef_Matriz.size_f() != this->Coef_Matriz.size_c())
+    {
+        std::cout << "La matriz no es cuadrada!" << std::endl;
+        return this->Coef_Matriz;
+    }
+    float det;
+
+    Matriz<T> A11, A12, A21, A22, B1, B2;
+    Matriz<T> A22inv;
+    A22 = this->Coef_Matriz.extrac_partition(fila_init, column_init, this->Coef_Matriz.size_f() - 1, this->Coef_Matriz.size_c() - 1);
+    A11 = this->Coef_Matriz.extrac_partition(0, 0, fila_init - 1, column_init - 1);
+    A12 = this->Coef_Matriz.extrac_partition(0, column_init, fila_init - 1, this->Coef_Matriz.size_c() - 1);
+    A21 = this->Coef_Matriz.extrac_partition(fila_init, 0, this->Coef_Matriz.size_f() - 1, column_init - 1);
+
+    B1 = this->vector_indp.extrac_partition(0, 0, fila_init - 1, 0);
+    B2 = this->vector_indp.extrac_partition(fila_init, 0, this->vector_indp.size_f() - 1, 0);
+
+    std::cout << "PARTICIONES: " << std::endl;
+
+    std::cout << "A11" << std::endl;
+    A11.print();
+
+    std::cout << "A12" << std::endl;
+    A12.print();
+
+    std::cout << "A21" << std::endl;
+    A21.print();
+    det = A22.Determinante();
+    std::cout << "A22\n   Determinante  =  " << det << std::endl;
+    A22.print();
+
+    std::cout << "B1 " << std::endl;
+    B1.print();
+
+    std::cout << "B2" << std::endl;
+    B2.print();
+
+    if (det != 0)
+        A22inv = A22.inversa();
+    else
+    {
+        std::system(LIMPIAR);
+        this->Inverse_partition(fila_init + 1, column_init + 1);
+    }
+
+    std::cout << "A22^-1" << std::endl;
+    A22.print();
+}
+
 template <class T>
 Linear_equation<T>::~Linear_equation()
 {
@@ -1551,6 +1663,7 @@ public:
     void Menu_metodos_exactos();
     void Menu_inversa_particionado();
     void Menu_Gausss_JordanP();
+    void Menu_Metodo_intercambio();
 
     void Menu_metodos_iterativos();
 
@@ -1723,9 +1836,9 @@ Matriz<F> Menu::read_matrix(size_t filas, size_t columnas, bool n)
         }
     }
 
-    std::cout << "matrix :" << std::endl;
+    //std::cout << "matrix :" << std::endl;
 
-    Mat.print();
+    //Mat.print();
 
     return Mat;
 }
@@ -1772,9 +1885,9 @@ int Menu::Main_menu()
     case 1:
 
         this->Menu_Soluciones_de_ecuaciones();
-
         break;
-
+    case 2:
+        this->Menu_sistemas_ecuaciones();
     default:
         break;
     }
@@ -2220,30 +2333,23 @@ void Menu::Menu_sistemas_ecuaciones()
             }
         } while (1);
 
-        do
+        this->op_submenu_2 = ((int)v[0]);
+
+        switch (((int)v[0])) //Metodo seleccionado
         {
-            this->op_submenu_2 = ((int)v[0]);
+        case 1:
+            this->Menu_metodos_exactos();
+            break;
 
-            switch (((int)v[0])) //Metodo seleccionado
-            {
-            case 1:
-                this->Menu_metodos_exactos();
-                break;
+        case 2:
+            //this->Menu_metodos_iterativos();
+            break;
 
-            case 2:
-                //this->Menu_metodos_iterativos();
-                break;
+        default:
+            break;
+        }
 
-            default:
-                break;
-            }
-
-            std::cout << "¿Deseas volver al menu anterior?(S/N) : ";
-            if (!this->read_input("s"))
-                break;
-        } while (1);
-
-        std::cout << "¿Deseas probar otro metodo?(S/N) : ";
+        std::cout << "¿Deseas volver al menu anterior?(S/N) : ";
         if (!this->read_input("s"))
             break;
 
@@ -2280,28 +2386,199 @@ void Menu::Menu_metodos_exactos()
             }
         } while (1);
 
-        do
+        this->op_metodos_Exactos = ((int)v[0]);
+
+        switch (((int)v[0])) //Metodo seleccionado
         {
-            this->op_metodos_Exactos = ((int)v[0]);
+        case 1:
+            this->Menu_inversa_particionado();
+            break;
 
-            switch (((int)v[0])) //Metodo seleccionado
-            {
-            case 0:
-                break;
+        default:
+            break;
+        }
 
-            default:
-                break;
-            }
-
-            std::cout << "¿Deseas probar otro metodo?(S/N) : ";
-            if (!this->read_input("s"))
-                break;
-        } while (1);
-
-        std::cout << "¿Deseas volver al menu anterior?(S/N) : ";
+        std::cout << "¿Deseas probar otro metodo?(S/N) : ";
         if (!this->read_input("s"))
             break;
 
+    } while (1);
+}
+
+void Menu::Menu_inversa_particionado()
+{
+
+    do
+    {
+        Matriz<float> Mat, vector_indp;
+        std::vector<float> v;
+        float determ;
+        int siz;
+        std::system(LIMPIAR);
+        std::cout << "Ingrese el tamaño de la matriz(un solo numero sin espacios) : ";
+        v = this->readNumeric_input(1);
+        do
+        {
+            std::cout << "Ingresa La matriz de coeficientes : " << std::endl;
+            try
+            {
+                Mat = this->read_matrix<float>(((int)v[0]), ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        do
+        {
+            std::cout << "Ingrese el vector de terminos independientes(en forma horizontal): " << std::endl;
+            try
+            {
+                vector_indp = this->read_matrix<float>(1, ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        try
+        {
+            std::cout << "Matriz de Coeficientes " << std::endl;
+            Mat.print();
+
+            std::cout << "Vector de terminos independientes " << std::endl;
+            (vector_indp.transp()).print();
+
+            determ = Mat.Determinante();
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+
+        if (determ == 0)
+        {
+            std::cout << "La matriz no tiene inversa determinante iguala 0 !" << std::endl;
+        }
+        else
+        {
+            std::cout << "Determinante : " << determ << std::endl;
+            Linear_equation<float> X(Mat, vector_indp);
+            if (Mat.size_f() > 1)
+                X.Inverse_partition(1, 1);
+        }
+
+        std::cout << "¿Deseas probar otra matriz?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
+    } while (1);
+}
+
+void Menu::Menu_Gausss_JordanP()
+{
+    Matriz<float> Mat, vector_indp;
+    std::vector<float> v;
+    int siz;
+    do
+    {
+        std::cout << "Ingrese el tamaño de la matriz(un solo numero sin espacios) : ";
+        v = this->readNumeric_input(1);
+        do
+        {
+            std::cout << "Ingresa La matriz de coeficientes : " << std::endl;
+            try
+            {
+                Mat = this->read_matrix<float>(((int)v[0]), ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        do
+        {
+            std::cout << "Ingrese el vector de terminos independientes(en forma horizontal): " << std::endl;
+            try
+            {
+                vector_indp = this->read_matrix<float>(1, ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        std::cout << "Coef" << std::endl;
+        Mat.print();
+
+        std::cout << "indp" << std::endl;
+        vector_indp.print();
+
+        std::cout << "¿Deseas probar otra matriz?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
+    } while (1);
+}
+
+void Menu::Menu_Metodo_intercambio()
+{
+    Matriz<float> Mat, vector_indp;
+    std::vector<float> v;
+    int siz;
+    do
+    {
+        std::cout << "Ingrese el tamaño de la matriz(un solo numero sin espacios) : ";
+        v = this->readNumeric_input(1);
+        do
+        {
+            std::cout << "Ingresa La matriz de coeficientes : " << std::endl;
+            try
+            {
+                Mat = this->read_matrix<float>(((int)v[0]), ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        do
+        {
+            std::cout << "Ingrese el vector de terminos independientes(en forma horizontal): " << std::endl;
+            try
+            {
+                vector_indp = this->read_matrix<float>(1, ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        std::cout << "Coef" << std::endl;
+        Mat.print();
+
+        std::cout << "indp" << std::endl;
+        vector_indp.print();
+
+        std::cout << "¿Deseas probar otra matriz?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
     } while (1);
 }
 
@@ -2314,15 +2591,22 @@ int main(int argc, char const *argv[])
 
     Menu m;
 
-    //while (1)
-    //    if (m.Main_menu() == 4)
-    //        break;
-    Matriz<float> A(2);
-    A = m.read_matrix<float>(2, 2, false);
+    while (1)
+        if (m.Main_menu() == 4)
+            break;
+    //Matriz<float> A(5), B(1, 5, 1);
+    //A = m.read_matrix<float>(5, 5, false);
+
+    //Linear_equation<float> X(A, B);
+    //X.Inverse_partition(2, 2);
 
     //A.adj().print();
+    //std::cout << "Inv" << std::endl;
+    //A.inversa().print();
 
-    std::cout << A.Determinante() << std::endl;
+    //A.extrac_partition(1, 1, 2, 2).print();
+
+    //std::cout << A.Determinante() << std::endl;
 
     return 0;
 }
