@@ -511,688 +511,50 @@ EquationS::~EquationS()
 {
 }
 
-/*
-    Creamos una clase Numero para poder efectuar un mayor numero de opraciones aritmeticas 
-    ya sea con numeros reales, enteros , racionales e irracionales.
-    Ademas dicha clase nos permite expresar el resultado de una opracion de la manera exacta 
-    haciendo uso de fracciones para expresar los resultados.
-*/
-
-class Number
+/*Matrix with vectors*/
+template <class t>
+void print(std::vector<std::vector<t>> Mat)
 {
-private:
-    float real_part;
-    int numerator, denominator; //Representacion como racional
-    bool is_rational;
-    bool is_constant;
 
-    /*
-        podemos usar alguna de las constantes mas conocidas 
-        declarando el objeto con su respectivo nombre:
-            
-            - π  = PI
-            - e = E o e
-            - √2  = SQRT2
-            - Φ = PHI
-    
-        *Nota: las claves unicamente deben contener dichos caracteres ya sea mayusculas o minusculas
-    */
+    if (Mat.empty())
+        std::cout << "La Matriz es de tamano 0\n";
 
-public:
-    Number();
-    Number(float real);       //Constructor reales
-    Number(float a, float b); //Constructor racional
-    Number(std::string key);  //constructor Irracional
-    //fracciones con irracionales
-    Number(std::string numerator, float denominator);       //  Irracional/real
-    Number(std::string numerator, std::string denominator); //  Irracional/Irracional
-    Number(float numerator, std::string denominator);       //  real/Irracional
-
-    friend std::ostream &operator<<(std::ostream &o, const Number n)
+    for (size_t i = 0; i < Mat.size(); i++)
     {
-        if (n.is_rational)
+        for (size_t j = 0; j < Mat[i].size(); j++)
         {
-            if (n.numerator > 0 && n.denominator > 0)
-                o << n.numerator << "/" << n.denominator;
-            else if (n.numerator < 0 && n.denominator < 0)
-                o << -1 * n.numerator << "/" << -1 * n.denominator;
-            else
-                o << '-' << abs(n.numerator) << "/" << abs(n.denominator);
+
+            std::cout << Mat[i][j] << "\t";
         }
-        else
-            o << n.real_part;
-
-        return o;
+        std::cout << std::endl;
     }
+    std::cout << std::endl;
+}
 
-    friend std::ostream &operator<<(std::ostream &o, const Number *n)
+template <class t>
+std::vector<std::vector<t>> resize(std::vector<std::vector<t>> Mat, int F, int C)
+{
+    std::vector<t> init(C, 0);
+    std::vector<std::vector<t>> M(F, init);
+
+    for (size_t i = 0; i < Mat.size(); i++)
     {
-        if (n->is_rational)
+        for (size_t j = 0; j < Mat[i].size(); i++)
         {
-            if (n->numerator > 0 && n->denominator > 0)
-                o << n->numerator << "/" << n->denominator;
-            else if (n->numerator < 0 && n->denominator < 0)
-                o << -1 * n->numerator << "/" << -1 * n->denominator;
-            else
-                o << '-' << abs(n->numerator) << "/" << abs(n->denominator);
-        }
-        else
-            o << n->real_part;
-
-        return o;
-    }
-
-    static void *operator new(size_t size);
-    static void *operator new[](size_t size);
-    void operator delete[](void *p);
-    void operator delete(void *p);
-
-    Number &simplify();
-
-    Number &operator=(const Number &x);
-    Number &operator=(const float x);
-    Number &operator=(const std::pair<float, float> &x);
-
-    Number operator+(const Number &x);
-    Number operator+(const float &x);
-
-    Number &operator+=(const Number &x);
-    Number &operator+=(const float &x);
-
-    Number operator-(const Number &x);
-    Number operator-(const float &x);
-
-    Number operator*(const Number &x);
-    Number operator*(const float &x);
-
-    Number operator/(const Number &x);
-    Number operator/(const float &x);
-
-    Number make_fraction(float &a, float &b);
-    ~Number();
-};
-
-Number::Number()
-{
-    this->is_constant = false;
-    this->is_rational = false;
-    this->real_part = 0;
-    this->numerator = 0;
-    this->denominator = 1;
-}
-
-Number::Number(float real)
-{
-    this->is_constant = false;
-    this->is_rational = false;
-    this->real_part = real;
-    this->numerator = real;
-    this->denominator = 1;
-}
-
-Number::Number(float a, float b)
-{
-    if (b == 0)
-        throw std::invalid_argument("Division por 0 !");
-    this->is_constant = false;
-    if (b != 1)
-        this->is_rational = true;
-    this->real_part = a / b;
-    this->numerator = a;
-    this->denominator = b;
-}
-
-Number::Number(std::string key)
-{
-    const float Pi = M_PI, E = exp(1);
-    const float sqrt2 = M_SQRT2;
-    size_t pos, k;
-    std::string claves[] = {"pi", "e", "sqrt2", "phi"};
-
-    this->is_constant = true;
-    this->is_rational = false;
-    std::transform(key.begin(), key.end(), key.begin(), tolower);
-
-    for (size_t i = 0; i < 4; i++)
-    {
-        pos = key.find(claves[i]);
-        if (pos != std::string::npos)
-        {
-            k = i;
-            break;
+            if (M[i][j] && Mat[i][j])
+                M[i][j] = Mat[i][j];
         }
     }
 
-    if (pos == std::string::npos)
-        throw std::invalid_argument((key + " No existe :("));
-    else
-    {
-
-        if (k == 0)
-        {
-            this->real_part = Pi;
-            this->numerator = Pi;
-        }
-
-        if (k == 1)
-        {
-            this->real_part = E;
-            this->numerator = E;
-        }
-
-        if (k == 3)
-        {
-            this->real_part = sqrt2;
-            this->numerator = sqrt2;
-        }
-        if (k == 4)
-        {
-            this->real_part = 1.61803398875;
-            this->numerator = 1.61803398875;
-        }
-    }
-
-    this->denominator = 1;
+    return M;
 }
 
-Number &Number::simplify()
-{
-    bool is_simplifying = false;
-    if (this->numerator == this->denominator)
-    {
-        this->numerator = 1;
-        this->denominator = 1;
-        this->is_rational = false;
-        return *this;
-    }
-    else
-    {
-        for (int i = 2; i < this->numerator + 1; i++)
-        {
-            if (this->numerator % i == 0)
-            {
-                if (this->denominator % i == 0)
-                {
-                    this->numerator = this->numerator / i;
-                    this->denominator = this->denominator / i;
-                    is_simplifying = true;
-                    break;
-                }
-            }
-        }
-        if (!is_simplifying)
-            return *this;
-        else
-            this->simplify();
-    }
-    return *this;
-}
-
-Number &Number::operator=(const Number &x)
-{
-    this->denominator = x.denominator;
-    this->numerator = x.numerator;
-    this->is_constant = x.is_constant;
-    this->is_rational = x.is_rational;
-    this->real_part = x.real_part;
-
-    return *this;
-}
-
-Number &Number::operator=(const float x)
-{
-    this->denominator = 1;
-    this->numerator = x;
-    this->is_constant = false;
-    this->is_rational = false;
-    this->real_part = x;
-
-    return *this;
-}
-
-Number Number::operator+(const Number &x)
+template <class t>
+std::vector<std::vector<t>> ExtractMat(std::vector<std::vector<t>> Mat, int sz, int F, int C)
 {
 
-    if (this->is_rational || x.is_rational)
-    {
-        if (x.denominator == this->denominator)
-        {
-            Number r(this->numerator + x.numerator, this->denominator);
-            return r.simplify();
-        }
-        else
-        {
-            float a = this->numerator * x.denominator;
-            float b = this->denominator * x.numerator;
-            Number r(a + b, this->denominator * x.denominator);
-            return r.simplify();
-        }
-    }
-
-    float y = this->real_part + x.real_part;
-    Number r(y);
-
-    return r;
-}
-
-Number Number::operator+(const float &x)
-{
-
-    if (this->is_rational || (((int)x) == x))
-    {
-        if (this->denominator == 1)
-        {
-            Number r(this->numerator + x, this->denominator);
-            return r.simplify();
-        }
-        else
-        {
-            float a = this->numerator;
-            float b = this->denominator * x;
-            Number r(a + b, this->denominator * 1);
-            return r.simplify();
-        }
-    }
-
-    float y = this->real_part + x;
-    Number r(y);
-
-    return r;
-}
-
-Number &Number::operator+=(const Number &x)
-{
-
-    if (this->is_rational || x.is_rational)
-    {
-        if (x.denominator == this->denominator)
-        {
-            this->numerator += x.numerator;
-
-            return *this;
-        }
-        else
-        {
-            float a = this->numerator * x.denominator;
-            float b = this->denominator * x.numerator;
-            this->numerator = a + b;
-            this->denominator = this->denominator * x.denominator;
-            return *this;
-        }
-    }
-
-    float y = this->real_part + x.real_part;
-    Number r(y);
-
-    (*this) = r;
-
-    return *this;
-}
-
-Number &Number::operator+=(const float &x)
-{
-
-    if (this->is_rational || (((int)x) == x))
-    {
-        if (this->denominator == 1)
-        {
-            Number r(this->numerator + x, this->denominator);
-            r.simplify();
-            (*this) = r;
-            return *this;
-        }
-        else
-        {
-            float a = this->numerator;
-            float b = this->denominator * x;
-            Number r(a + b, this->denominator * 1);
-            r.simplify();
-            (*this) = r;
-            return *this;
-        }
-    }
-
-    float y = this->real_part + x;
-    Number r(y);
-    (*this) = r;
-    return *this;
-}
-
-Number Number::operator-(const Number &x)
-{
-
-    if (this->is_rational || x.is_rational)
-    {
-        if (x.denominator == this->denominator)
-        {
-            Number r(this->numerator - x.numerator, this->denominator);
-            return r.simplify();
-        }
-        else
-        {
-            float a = this->numerator * x.denominator;
-            float b = this->denominator * x.numerator;
-            Number r(a - b, this->denominator * x.denominator);
-            return r.simplify();
-        }
-    }
-
-    float y = this->real_part - x.real_part;
-    Number r(y);
-
-    return r;
-}
-
-Number Number::operator-(const float &x)
-{
-
-    if (this->is_rational || (((int)x) == x))
-    {
-        if (this->denominator == 1)
-        {
-            Number r(this->numerator - x, this->denominator);
-            return r.real_part;
-        }
-        else
-        {
-            float a = this->numerator;
-            float b = this->denominator * x;
-            Number r(a - b, this->denominator * 1);
-            return r.real_part;
-        }
-    }
-
-    float y = this->real_part - x;
-    Number r(y);
-    return r;
-}
-
-Number Number::operator*(const Number &x)
-{
-
-    if (this->is_rational || x.is_rational)
-    {
-        Number r(this->numerator * x.numerator, this->denominator * x.denominator);
-        return r.simplify();
-    }
-
-    float y = this->real_part * x.real_part;
-    Number r(y);
-
-    return r;
-}
-
-Number Number::operator*(const float &x)
-{
-
-    if (this->is_rational || (((int)x) == x))
-    {
-
-        Number r(this->numerator * x, this->denominator);
-        return r.real_part;
-    }
-
-    float y = this->real_part * x;
-    Number r(y);
-
-    return r;
-}
-
-Number Number::operator/(const Number &x)
-{
-    if (x.real_part == 0)
-    {
-        throw std::invalid_argument("Division por 0!");
-    }
-
-    if (this->is_rational || x.is_rational)
-    {
-
-        float a = this->denominator * x.numerator;
-        float b = this->numerator * x.denominator;
-        Number r(a, b);
-        return r.simplify();
-    }
-
-    float y = this->real_part / x.real_part;
-    Number r(y);
-
-    return r;
-}
-
-Number Number::operator/(const float &x)
-{
-    if (x == 0)
-    {
-        throw std::invalid_argument("Division por 0!");
-    }
-
-    if (this->is_rational || (((int)x) == x))
-    {
-        float a = this->denominator * x;
-        float b = this->numerator;
-        Number r(a, b);
-        return r.real_part;
-    }
-
-    float y = this->real_part / x;
-    Number r(y);
-
-    return r;
-}
-
-Number &Number::operator=(const std::pair<float, float> &x)
-{
-    Number r(x.first, x.second);
-
-    (*this) = r;
-    return *this;
-}
-
-Number Number::make_fraction(float &a, float &b)
-{
-    Number x(a, b);
-    return x;
-}
-
-static void *Number::operator new(size_t size)
-{
-    std::cout << "New" << std::endl;
-    void *p = std::malloc(size);
-
-    if (!p)
-    {
-        std::cerr << "Error al reservar memoria!";
-        throw std::bad_alloc();
-    }
-
-    std::cout << "New works" << std::endl;
-
-    return p;
-}
-
-void Number::operator delete(void *p)
-{
-    //std::cout << "Delete" << std::endl;
-    free(p);
-}
-
-static void *Number::operator new[](size_t size)
-{
-    void *p;
-
-    p = std::malloc(size);
-
-    if (!p)
-    {
-        throw std::bad_alloc();
-    }
-    //std::cout << "New works" << std::endl;
-
-    return p;
-}
-
-void Number::operator delete[](void *p)
-{
-    free(p);
-}
-
-Number::~Number()
-{
-}
-
-/*
-La clase Matriz funciona como un template es decir que podemos instanciar el objeto 
-Matriz con cualquier tipo las operaciones con matrices solo estan disponibles con tipos
-Numericos o objetos con los operadores aritmeticos sobrecargados
-*/
-
-template <class type>
-class Matriz
-{
-private:
-    type **Mat;
-    int filas;
-    int columnas;
-
-    inline Matriz<type> ExtractMat(type **Mat, int sz, int F, int C); //funcion para el Determinate
-    type Det(type **Mat, int sz);                                     //Calcula el determinante por cofactores
-
-    type brackethelp(type *fila, int col); //funcion de ayuda para el operador corche
-    int brcketaux, bracketaux2;            //variables auxiliares para indices en corchetes
-
-public:
-    Matriz(const type init, int filas, int columnas); //Para cualquier Matriz inicializada
-    Matriz(int filas, int columnas);                  //Para cualquier Matriz
-    Matriz(int size);                                 //Para Matrices cuadradas
-    Matriz();                                         //Constructor vacio
-
-    Matriz &resize(int filas, int columnas); //Redimensionar Matriz sin perder los datos
-
-    void print(); //Imprimir la matriz
-
-    type Determinante(); //Devuelve el determinante de la matriz
-
-    Matriz<type> transp(); //Devuelve la transpuesta de la matriz
-    Matriz<type> adj();    //devuelve la adjunta de la matriz
-
-    Matriz<type> inversa(); //Retorna la inversa de una matriz (mediante la ajunta de la matriz)
-
-    Matriz<type> operator+(const Matriz<type> &Mat2);  //Suma de matrices
-    Matriz<type> operator-(const Matriz<type> &Mat2);  //Resta de matrices
-    Matriz<type> operator*(const Matriz<type> &Mat2);  //Multiplicacion de matrices
-    Matriz<type> &operator=(const Matriz<type> &Mat2); //Operador de asignacion
-
-    Matriz<type> extrac_partition(size_t fila_init, size_t column_init, size_t fila_end, size_t colend);
-
-    type *operator[](const int index);        //Operador corchete para filas
-    type operator[](short int index2);        //Operador corchete para columnas
-    Matriz<type> &operator=(const type Data); //Para asignar valor a las casillas de la matriz
-
-    int size_f()
-    {
-        return this->filas;
-    }
-
-    int size_c()
-    {
-        return this->columnas;
-    }
-
-    ~Matriz();
-};
-
-template <class type>
-Matriz<type>::Matriz(int filas, int columnas)
-{
-    if (this->filas != 1 && this->columnas != 1)
-    {
-        this->Mat = new type *[filas];
-
-        for (int i = 0; i < filas; i++)
-        {
-            this->Mat[i] = new type[columnas];
-        }
-    }
-    this->filas = filas;
-    this->columnas = columnas;
-}
-
-template <class type>
-Matriz<type>::Matriz(int size)
-{
-    this->Mat = new type *[size];
-
-    for (int i = 0; i < size; i++)
-    {
-        this->Mat[i] = new type[size];
-    }
-    this->filas = size;
-    this->columnas = size;
-}
-
-template <class type>
-Matriz<type>::Matriz(const type init, int filas, int columnas)
-{
-    this->Mat = new type *[filas];
-
-    for (int i = 0; i < filas; i++)
-    {
-        this->Mat[i] = new type[columnas];
-    }
-
-    for (int i = 0; i < filas; i++)
-    {
-        for (int j = 0; j < columnas; j++)
-        {
-            this->Mat[i][j] = init;
-        }
-    }
-
-    this->filas = filas;
-    this->columnas = columnas;
-}
-
-template <class type>
-Matriz<type>::Matriz()
-{
-    this->Mat = NULL;
-    this->filas = 0;
-    this->columnas = 0;
-}
-
-template <class type>
-Matriz<type> &Matriz<type>::resize(int filas, int columnas)
-{
-    type **newMat;
-
-    newMat = new type *[filas];
-
-    for (int i = 0; i < filas; i++)
-    {
-        newMat[i] = new type[columnas];
-    }
-
-    for (int i = 0; i < this->filas; i++)
-    {
-        for (int j = 0; j < this->columnas; j++)
-        {
-            if (i < this->filas && j < this->columnas)
-                newMat[i][j] = this->Mat[i][j];
-        }
-    }
-
-    this->Mat = newMat;
-    this->filas = filas;
-    this->columnas = columnas;
-
-    return *this;
-}
-
-template <class type>
-inline Matriz<type> Matriz<type>::ExtractMat(type **Mat, int sz, int F, int C)
-{
-    Matriz<type> result(sz - 1, sz - 1);
+    std::vector<t> init(sz - 1, 0);
+    std::vector<std::vector<t>> M(sz - 1, init);
     int k = 0, l = 0;
 
     for (int i = 0; i < sz; i++)
@@ -1203,7 +565,7 @@ inline Matriz<type> Matriz<type>::ExtractMat(type **Mat, int sz, int F, int C)
             if (i != F && j != C)
             { //Si no estamos en la fila y la columna que se van a eliminar asignamos
                 //el valor en esa posicion al valor k,l de la matriz resultado
-                result.Mat[k][l] = Mat[i][j];
+                M[k][l] = Mat[i][j];
                 l++; //iteramos las columnas de la matriz resultado
             }
         }
@@ -1211,16 +573,16 @@ inline Matriz<type> Matriz<type>::ExtractMat(type **Mat, int sz, int F, int C)
             k++;    //iteramos las filas de la matriz resultado
     }
 
-    return result;
+    return M;
 }
 
-template <class type>
-type Matriz<type>::Det(type **Mat, int sz)
+template <class t>
+t Det(std::vector<std::vector<t>> Mat, int sz)
 {
 
-    type detval;
-    type dt;
-    std::vector<type> v;
+    t detval;
+    t dt;
+    std::vector<t> v;
 
     detval = 0;
 
@@ -1234,14 +596,15 @@ type Matriz<type>::Det(type **Mat, int sz)
     }
     else
     {
-        Matriz<type> res(sz - 1, sz - 1);
+        std::vector<t> init(sz - 1, 0);
+        std::vector<std::vector<t>> M(sz - 1, init);
 
         for (int i = 0; i < sz; i++)
         {
-            res = this->ExtractMat(Mat, sz, 0, i);
+            M = ExtractMat(Mat, sz, 0, i);
             // res.print();
 
-            dt = this->Det(res.Mat, sz - 1);
+            dt = Det(M, sz - 1);
 
             //std::cout << "det -> " << dt << std::endl;
 
@@ -1253,7 +616,7 @@ type Matriz<type>::Det(type **Mat, int sz)
             }
             else
             {
-                type men;
+                t men;
                 men = -1;
 
                 v.push_back((men * (Mat[0][i] * dt)));
@@ -1270,351 +633,472 @@ type Matriz<type>::Det(type **Mat, int sz)
     }
 }
 
-template <class type>
-type Matriz<type>::Determinante()
+template <class t>
+t Determinante(std::vector<std::vector<t>> Mat)
 {
-    if (this->filas != this->columnas)
+    if (Mat.size() != Mat[0].size())
         throw std::invalid_argument("La matriz no es cuadrada");
 
-    if (this->filas == 1 && this->columnas == 1)
-        return this->Mat[0][0];
+    if (Mat.size() == 1 && Mat[0].size() == 1)
+        return Mat[0][0];
 
-    return this->Det(this->Mat, this->filas);
+    return Det(Mat, Mat.size());
 }
 
-template <class type>
-Matriz<type> Matriz<type>::transp()
+template <class t>
+std::vector<std::vector<t>> transp(std::vector<std::vector<t>> Mat)
 {
-    Matriz<type> T(this->columnas, this->filas);
 
-    for (int i = 0; i < this->columnas; i++)
+    //std::cout << "DEBUG " << std::endl;
+
+    std::vector<t> aux(Mat.size(), 0);
+    std::vector<std::vector<t>> Trr(Mat[0].size(), aux);
+    for (int i = 0; i < Mat[0].size(); i++)
     {
-        for (int j = 0; j < this->filas; j++)
+        for (int j = 0; j < Mat.size(); j++)
         {
-            T.Mat[i][j] = this->Mat[j][i];
+            if (Mat[j][i])
+                Trr[i][j] = Mat[j][i];
         }
     }
 
-    return T;
+    return Trr;
 }
 
-template <class type>
-Matriz<type> Matriz<type>::adj()
+template <class t>
+std::vector<std::vector<t>> Adjunta(std::vector<std::vector<t>> Mat)
 {
-    Matriz<type> AD(this->filas, this->columnas);
-    Matriz<type> aux(this->filas - 1, this->columnas - 1);
 
-    for (int i = 0; i < this->columnas; i++)
+    //std::cout << "DEBUG " << std::endl;
+
+    std::vector<t> aux(Mat.size(), 0);
+    std::vector<std::vector<t>> M(Mat[0].size(), aux);
+
+    std::vector<t> x(Mat.size() - 1, 0);
+    std::vector<std::vector<t>> a(Mat[0].size() - 1, aux);
+
+    for (int i = 0; i < Mat.size(); i++)
     {
-
-        for (int j = 0; j < this->filas; j++)
+        for (int j = 0; j < Mat[0].size(); j++)
         {
-            aux = this->ExtractMat(this->Mat, this->filas, i, j);
-            if (((i + 1) + (j + 1)) % 2 == 0)
-            {
-                AD.Mat[i][j] = aux.Determinante();
-            }
-            else
-            {
-                AD.Mat[i][j] = aux.Determinante() * -1;
-            }
+            a = ExtractMat(Mat, Mat.size(), i, j);
+
+            M[i][j] = pow(-1, (i + 1) + (j + 1)) * Determinante(a);
         }
     }
 
-    return AD.transp();
+    return M;
 }
-
-template <class type>
-Matriz<type> Matriz<type>::inversa()
+template <class t>
+std::vector<std::vector<t>> Inversa(std::vector<std::vector<t>> Mat)
 {
-    /*Calculamos la inversa sabiendo que la inversa de una matriz A es:
-            trans(adj(A))
-    inv(A)= -------------
-                |A|
-    Donde |A| representa el determiante de la matriz.
-    (la  Inversa  de  la  matriz  solo es  aplicable  apartir  del  conjuto 
-    de los numeros reales(Naturales, Enteros, Racionales e Irracionales no))
-*/
-    if (this->Determinante() == 0)
-        throw std::invalid_argument("La matriz no tiene inversa(Determinante igual a 0\n");
 
-    Matriz<type> Inv, aux;
+    //std::cout << "DEBUG " << std::endl;
 
-    type det = this->Determinante();
+    std::vector<t> aux(Mat.size(), 0);
+    std::vector<std::vector<t>> M(Mat[0].size(), aux);
 
-    aux = this->adj();
+    std::vector<t> x(Mat.size() - 1, 0);
+    std::vector<std::vector<t>> a(Mat[0].size() - 1, aux);
 
-    Inv = aux.transp();
+    a = Adjunta(Mat);
 
-    for (int i = 0; i < Inv.filas; i++)
+    M = transp(a);
+
+    t d = Determinante(Mat);
+
+    for (int i = 0; i < Mat.size(); i++)
     {
-        for (int j = 0; j < Inv.columnas; j++)
+        for (int j = 0; j < Mat[0].size(); j++)
         {
-            Inv.Mat[i][j] = Inv.Mat[i][j] / det;
+
+            M[i][j] = M[i][j] / d;
         }
     }
 
-    return Inv.transp();
+    return M;
 }
 
-template <class type>
-void Matriz<type>::print()
+template <class t>
+//Mat1 + Mat2
+std::vector<std::vector<t>> Sum(std::vector<std::vector<t>> Mat1, std::vector<std::vector<t>> Mat2)
 {
-    if (Mat == NULL)
-        throw std::invalid_argument("La Matriz es de tamano 0\n");
-
-    for (int i = 0; i < this->filas; i++)
-    {
-        for (int j = 0; j < this->columnas; j++)
-        {
-            std::cout << this->Mat[i][j] << "\t";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << std::endl;
-}
-
-template <class type>
-Matriz<type> Matriz<type>::operator+(const Matriz<type> &Mat2)
-{
-    if (this->filas != Mat2.filas || this->columnas != Mat2.columnas)
+    if (Mat1.size() != Mat2.size() || Mat1[0].size() != Mat2[0].size())
         throw std::invalid_argument("Las Matrices no tienen el mismo tamano\n");
-    Matriz<type> Result(this->filas, this->columnas);
 
-    for (int i = 0; i < this->filas; i++)
+    std::vector<t> init(Mat1[0].size(), 5);
+    std::vector<std::vector<t>> M(Mat1.size(), init);
+
+    for (int i = 0; i < Mat1.size(); i++)
     {
-        for (int j = 0; j < this->columnas; j++)
+        for (int j = 0; j < Mat1[0].size(); j++)
         {
-            Result.Mat[i][j] = this->Mat[i][j] + Mat2.Mat[i][j];
+            M[i][j] = Mat1[i][j] + Mat2[i][j];
         }
     }
 
-    return Result;
+    return M;
 }
-
-template <class type>
-Matriz<type> Matriz<type>::operator-(const Matriz<type> &Mat2)
+template <class t>
+//Mat1-Mat2
+std::vector<std::vector<t>> Res(std::vector<std::vector<t>> Mat1, std::vector<std::vector<t>> Mat2)
 {
-    if (this->filas != Mat2.filas || this->columnas != Mat2.columnas)
+    if (Mat1.size() != Mat2.size() || Mat1[0].size() != Mat2[0].size())
         throw std::invalid_argument("Las Matrices no tienen el mismo tamano\n");
-    Matriz<type> Result(this->filas, this->columnas);
 
-    for (int i = 0; i < this->filas; i++)
+    std::vector<t> init(Mat1[0].size(), 5);
+    std::vector<std::vector<t>> M(Mat1.size(), init);
+
+    for (int i = 0; i < Mat1.size(); i++)
     {
-        for (int j = 0; j < this->columnas; j++)
+        for (int j = 0; j < Mat1[0].size(); j++)
         {
-            Result.Mat[i][j] = this->Mat[i][j] - Mat2.Mat[i][j];
+            M[i][j] = Mat1[i][j] - Mat2[i][j];
         }
     }
 
-    return Result;
+    return M;
 }
 
-template <class type>
-Matriz<type> Matriz<type>::operator*(const Matriz<type> &Mat2)
+template <class t>
+//Mat1-Mat2
+std::vector<std::vector<t>> Mult(std::vector<std::vector<t>> Mat1, std::vector<std::vector<t>> Mat2)
 {
-    if (this->filas != Mat2.columnas)
+    if (Mat1[0].size() != Mat2.size())
         throw std::invalid_argument("Las Matrices no se pueden multiplicar\n");
-    Matriz<type> Result(this->filas, Mat2.columnas);
 
-    type sum; //si se planea usar objetos estos tienen que tener un 0 y sobrecargar el operador = para poder asignarlo
+    std::vector<t> init(Mat2[0].size(), 0);
+    std::vector<std::vector<t>> M(Mat1.size(), init);
+
+    t sum; //si se planea usar objetos estos tienen que tener un 0 y sobrecargar el operador = para poder asignarlo
 
     sum = 0;
 
-    for (int i = 0; i < this->filas; i++)
+    for (size_t i = 0; i < Mat1.size(); i++)
     {
         sum = 0;
-        for (int j = 0; j < Mat2.columnas; j++)
+        for (size_t j = 0; j < Mat2[0].size(); j++)
         {
-            for (int k = 0; k < Mat2.columnas; k++)
+            for (size_t k = 0; k < Mat1[0].size(); k++)
             {
-                sum = sum + (this->Mat[i][k] * Mat2.Mat[k][j]);
-                Result.Mat[k][j] = sum;
+
+                M[i][j] += (Mat1[i][k] * Mat2[k][j]);
             }
         }
     }
 
-    return Result;
+    return M;
 }
 
-template <class type>
-Matriz<type> &Matriz<type>::operator=(const Matriz<type> &Mat2)
+template <class t>
+//Mat1-Mat2
+std::vector<std::vector<t>> Multescalar(std::vector<std::vector<t>> Mat1, t alfa)
 {
-    if (this->filas != Mat2.filas || this->columnas != Mat2.columnas)
-        this->resize(Mat2.filas, Mat2.columnas);
 
-    for (int i = 0; i < this->filas; i++)
+    std::vector<t> init(Mat1[0].size(), 0);
+    std::vector<std::vector<t>> M(Mat1.size(), init);
+
+    for (size_t i = 0; i < Mat1.size(); i++)
     {
-        for (int j = 0; j < this->columnas; j++)
+        for (size_t j = 0; j < Mat1[0].size(); j++)
         {
-            this->Mat[i][j] = Mat2.Mat[i][j];
+            M[i][j] = alfa * Mat1[i][j];
         }
     }
 
-    this->filas = Mat2.filas;
-    this->columnas = Mat2.columnas;
-
-    return *this;
+    return M;
 }
 
-template <class type>
-type Matriz<type>::brackethelp(type *fila, int col)
-{
-    return fila[col];
-}
-
-template <class type>
-type *Matriz<type>::operator[](const int index)
-{
-    if (index >= this->filas)
-        throw std::out_of_range("Fuera del rango de la matriz\n");
-    this->brcketaux = index;
-    return this->Mat[index];
-}
-
-template <class type>
-type Matriz<type>::operator[](short int index2)
-{
-    if (index2 >= this->columnas)
-        throw std::out_of_range("Fuera del rango de la matriz\n");
-
-    this->bracketaux2 = index2;
-    return (this->brackethelp((*this)[this->brcketaux], index2));
-}
-
-template <class type>
-Matriz<type> &Matriz<type>::operator=(const type Data)
-{
-    this->Mat[brcketaux][bracketaux2] = Data;
-    return *this;
-}
-
-//Extrae una partcion de una matriz  introduciendo la fila y comluna  donde inicia
-//y donde acaba  dicha partcion la retorna como una matriz nueva
-template <class type>
-Matriz<type> Matriz<type>::extrac_partition(size_t fila_init, size_t column_init, size_t fila_End, size_t column_end)
+template <class t>
+std::vector<std::vector<t>> extrac_partition(std::vector<std::vector<t>> Mat, size_t fila_init, size_t column_init, size_t fila_End, size_t column_end)
 {
     int fi = ((fila_End - fila_init) + 1);
     int col = ((column_end - column_init) + 1);
-    Matriz<type> Res(0, fi, col);
+    std::vector<t> init(col, 0);
+    std::vector<std::vector<t>> M(fi, init);
 
     //Res.print();
 
     //std::cout << "filas: " << fi << "col: " << col << std::endl;
 
-    int t = 0;
-    for (int i = fila_init; i <= fila_End && this->Mat[i]; i++)
+    int tr = 0;
+    for (int i = fila_init; i <= fila_End; i++)
     {
         int k = 0;
-        for (int j = column_init; j <= column_end && this->Mat[i][j]; j++)
+        for (int j = column_init; j <= column_end; j++)
         {
-            Res[t][k] = this->Mat[i][j];
+            M[tr][k] = Mat[i][j];
             //if(i >= fila_init && j >= column_init)
-            //std::cout << "->" << this->Mat[i][j] << '\t';
+            //std::cout << "->" << Mat[i][j] << '\t';
             k++;
         }
-        std::cout << std::endl;
-        t++;
+        //std::cout << std::endl;
+        tr++;
     }
 
-    return Res;
+    return M;
 }
 
-template <class type>
-Matriz<type>::~Matriz()
+template <class Ty>
+std::vector<std::vector<Ty>> Inverse_partition(std::vector<std::vector<Ty>> Coef_Matriz, std::vector<std::vector<Ty>> vector_indp, int fila_init, int column_init)
 {
-    if (sizeof(type) != sizeof(Number))
-    {
-        for (int i = 0; i < this->filas; i++)
-        {
-            delete[] this->Mat[i];
-        }
-        delete[] this->Mat;
-    }
-}
-
-/*Clase para representar sistemas de ecuaciones lineales*/
-
-template <class T>
-class Linear_equation
-{
-private:
-    Matriz<T> Coef_Matriz;
-    Matriz<T> vector_indp;
-
-public:
-    Linear_equation(Matriz<T> MatCoef, Matriz<T> vector_indp);
-    Matriz<T> Inverse_partition(int fila_init, int column_init);
-    ~Linear_equation();
-};
-
-template <class T>
-Linear_equation<T>::Linear_equation(Matriz<T> MatCoef, Matriz<T> vector_indp)
-{
-    this->Coef_Matriz = MatCoef;
-    this->vector_indp = vector_indp.transp();
-}
-
-template <class T>
-Matriz<T> Linear_equation<T>::Inverse_partition(int fila_init, int column_init)
-{
-    if (fila_init == this->Coef_Matriz.size_f())
+    if (fila_init == Coef_Matriz.size() - 1)
     {
         std::cout << "No se pude obtener la inversa de la matriz , no hay mas particiones posibles!" << std::endl;
-        return this->Coef_Matriz;
+        return Coef_Matriz;
     }
-    if (this->Coef_Matriz.size_f() != this->Coef_Matriz.size_c())
+    if (Coef_Matriz.size() != Coef_Matriz[0].size())
     {
         std::cout << "La matriz no es cuadrada!" << std::endl;
-        return this->Coef_Matriz;
+        return Coef_Matriz;
     }
     float det;
 
-    Matriz<T> A11, A12, A21, A22, B1, B2;
-    Matriz<T> A22inv;
-    A22 = this->Coef_Matriz.extrac_partition(fila_init, column_init, this->Coef_Matriz.size_f() - 1, this->Coef_Matriz.size_c() - 1);
-    A11 = this->Coef_Matriz.extrac_partition(0, 0, fila_init - 1, column_init - 1);
-    A12 = this->Coef_Matriz.extrac_partition(0, column_init, fila_init - 1, this->Coef_Matriz.size_c() - 1);
-    A21 = this->Coef_Matriz.extrac_partition(fila_init, 0, this->Coef_Matriz.size_f() - 1, column_init - 1);
+    std::vector<std::vector<Ty>> A11, A12, A21, A22, B1, B2;
+    std::vector<std::vector<Ty>> A22inv, D, C, E, F, x1, x2, Cinv;
 
-    B1 = this->vector_indp.extrac_partition(0, 0, fila_init - 1, 0);
-    B2 = this->vector_indp.extrac_partition(fila_init, 0, this->vector_indp.size_f() - 1, 0);
+    std::vector<std::vector<Ty>> aux1, aux2, aux3, aux4, aux5, aux6, aux7, aux9, aux10, aux11;
+    A22 = extrac_partition(Coef_Matriz, fila_init, column_init, Coef_Matriz.size() - 1, Coef_Matriz[0].size() - 1);
+    A11 = extrac_partition(Coef_Matriz, 0, 0, fila_init - 1, column_init - 1);
+    A12 = extrac_partition(Coef_Matriz, 0, column_init, fila_init - 1, Coef_Matriz[0].size() - 1);
+    A21 = extrac_partition(Coef_Matriz, fila_init, 0, Coef_Matriz.size() - 1, column_init - 1);
+
+    B1 = extrac_partition(vector_indp, 0, 0, fila_init - 1, 0);
+    B2 = extrac_partition(vector_indp, fila_init, 0, vector_indp.size() - 1, 0);
 
     std::cout << "PARTICIONES: " << std::endl;
 
     std::cout << "A11" << std::endl;
-    A11.print();
+    print<Ty>(A11);
 
     std::cout << "A12" << std::endl;
-    A12.print();
+    print<Ty>(A12);
 
     std::cout << "A21" << std::endl;
-    A21.print();
-    det = A22.Determinante();
+    print<Ty>(A21);
+    det = Determinante(A22);
     std::cout << "A22\n   Determinante  =  " << det << std::endl;
-    A22.print();
+    print<Ty>(A22);
 
     std::cout << "B1 " << std::endl;
-    B1.print();
+    print<Ty>(B1);
 
     std::cout << "B2" << std::endl;
-    B2.print();
+    print<Ty>(B2);
 
     if (det != 0)
-        A22inv = A22.inversa();
+        A22inv = Inversa(A22);
     else
     {
+        Inverse_partition(Coef_Matriz, vector_indp, fila_init + 1, column_init + 1);
+    }
+    std::cout << "A22^-1" << std::endl;
+    print<Ty>(A22inv);
+
+    try
+    {
+        D = Mult<Ty>(A12, A22inv);
+
+        aux1 = Mult(D, A21);
+
+        std::cout << "D * A21" << std::endl;
+        print<Ty>(aux1);
+
+        C = Res<Ty>(A11, aux1);
+
+        Cinv = Inversa<Ty>(C);
+
+        aux2 = Mult<Ty>(D, B2);
+        aux3 = Res<Ty>(B1, aux2);
+        x1 = Mult<Ty>(Cinv, aux3);
+
+        E = Mult<Ty>(A22inv, A21);
+
+        aux4 = Mult(E, Cinv);
+        aux5 = Mult(aux4, D);
+        F = Sum<Ty>(A22inv, aux5);
+
+        aux6 = Mult<Ty>(F, B2);
+        aux7 = Mult<Ty>(E, Cinv);
+        aux9 = Mult<Ty>(aux7, B1);
+        aux10 = Multescalar<Ty>(aux9, -1);
+
+        x2 = Sum<Ty>(aux10, aux6);
+    }
+    catch (const std::exception &e)
+    {
         std::system(LIMPIAR);
-        this->Inverse_partition(fila_init + 1, column_init + 1);
+        Inverse_partition(Coef_Matriz, vector_indp, fila_init + 1, column_init + 1);
     }
 
-    std::cout << "A22^-1" << std::endl;
-    A22.print();
+    std::cout << "D" << std::endl;
+    print<Ty>(D);
+
+    std::cout << "C" << std::endl;
+    print<Ty>(C);
+
+    std::cout << "C^-1" << std::endl;
+    print<Ty>(Cinv);
+
+    std::cout << "E" << std::endl;
+    print<Ty>(E);
+
+    std::cout << "F" << std::endl;
+    print<Ty>(F);
+
+    std::cout << "X1" << std::endl;
+    print<Ty>(x1);
+
+    std::cout << "X2" << std::endl;
+    print<Ty>(x2);
+
+    return Coef_Matriz;
 }
 
-template <class T>
-Linear_equation<T>::~Linear_equation()
+template <class Ty>
+std::vector<std::vector<Ty>> Gauss_partition(std::vector<std::vector<Ty>> Coef_Matriz, std::vector<std::vector<Ty>> vector_indp, int fila_init, int column_init)
 {
+    if (fila_init == Coef_Matriz.size() - 1)
+    {
+        std::cout << "No se pude obtener la inversa de la matriz , no hay mas particiones posibles!" << std::endl;
+        return Coef_Matriz;
+    }
+    if (Coef_Matriz.size() != Coef_Matriz[0].size())
+    {
+        std::cout << "La matriz no es cuadrada!" << std::endl;
+        return Coef_Matriz;
+    }
+    float det, dt;
+
+    std::vector<std::vector<Ty>> A11, A12, A21, A22, B1, B2;
+    std::vector<std::vector<Ty>> A22pinv, A11inv, A12p, B1p, A22p, B2p, B2pp, B1pp;
+
+    std::vector<std::vector<Ty>> aux1, aux2, aux3, aux4, aux5, aux6, aux7, aux9, aux10, aux11;
+    A22 = extrac_partition(Coef_Matriz, fila_init, column_init, Coef_Matriz.size() - 1, Coef_Matriz[0].size() - 1);
+    A11 = extrac_partition(Coef_Matriz, 0, 0, fila_init - 1, column_init - 1);
+    A12 = extrac_partition(Coef_Matriz, 0, column_init, fila_init - 1, Coef_Matriz[0].size() - 1);
+    A21 = extrac_partition(Coef_Matriz, fila_init, 0, Coef_Matriz.size() - 1, column_init - 1);
+
+    B1 = extrac_partition(vector_indp, 0, 0, fila_init - 1, 0);
+    B2 = extrac_partition(vector_indp, fila_init, 0, vector_indp.size() - 1, 0);
+
+    std::cout << "PARTICIONES: " << std::endl;
+
+    std::cout << "A11" << std::endl;
+    dt = Determinante(A11);
+    std::cout << "\nDeterminante  =  " << dt << std::endl;
+    print<Ty>(A11);
+
+    std::cout << "A12" << std::endl;
+    print<Ty>(A12);
+
+    std::cout << "A21" << std::endl;
+    print<Ty>(A21);
+
+    std::cout << "A22" << det << std::endl;
+    print<Ty>(A22);
+
+    std::cout << "B1 " << std::endl;
+    print<Ty>(B1);
+
+    std::cout << "B2" << std::endl;
+    print<Ty>(B2);
+
+    if (det != 0)
+        A11inv = Inversa(A11);
+    else
+    {
+        Inverse_partition(Coef_Matriz, vector_indp, fila_init + 1, column_init + 1);
+    }
+
+    std::cout << "A11^-1" << std::endl;
+    print<Ty>(A11inv);
+
+    try
+    {
+        A12p = Mult<Ty>(A11inv, A12);
+        B1p = Mult<Ty>(A11inv, B1);
+        aux1 = Mult<Ty>(A21, A12p);
+        A22p = Res<Ty>(A22, aux1);
+
+        aux2 = Mult<Ty>(A21, B1p);
+        B2p = Res<Ty>(B2, aux2);
+
+        if (Determinante(A22p) != 0)
+            A22pinv = Inversa(A22p);
+        else
+        {
+            Inverse_partition(Coef_Matriz, vector_indp, fila_init + 1, column_init + 1);
+        }
+
+        B2pp = Mult<Ty>(A22pinv, B2p);
+
+        aux3 = Mult<Ty>(A12p, B2pp);
+        B1pp = Res<Ty>(B1p, aux3);
+    }
+    catch (const std::exception &e)
+    {
+        std::system(LIMPIAR);
+        Inverse_partition(Coef_Matriz, vector_indp, fila_init + 1, column_init + 1);
+    }
+
+    std::cout << "A12'" << std::endl;
+    print<Ty>(A12p);
+
+    std::cout << "B1'" << std::endl;
+    print<Ty>(B1p);
+
+    std::cout << "A11'" << std::endl;
+    print<Ty>(A22p);
+
+    std::cout << "B2'" << std::endl;
+    print<Ty>(B2p);
+
+    std::cout << "(A22')^-1" << std::endl;
+    print<Ty>(A22pinv);
+
+    std::cout << "B2''" << std::endl;
+    print<Ty>(B2pp);
+
+    std::cout << "B1''" << std::endl;
+    print<Ty>(B1pp);
+
+    return Coef_Matriz;
+}
+
+template <class Ty>
+bool is_diagonaldominat(std::vector<std::vector<Ty>> Coef_Matriz)
+{
+    bool flag = true;
+    for (size_t i = 0; i < Coef_Matriz.size(); i++)
+    {
+        Ty sum = 0;
+        for (size_t j = 0; j < Coef_Matriz[0].size(); j++)
+        {
+            if (i != j)
+                sum += Coef_Matriz[i][j];
+        }
+
+        if (std::abs(Coef_Matriz[i][i]) < std::abs(sum))
+        {
+            flag = false;
+            break;
+        }
+    }
+    return flag;
+}
+
+template <class Ty>
+std::vector<std::vector<Ty>> Jacobi(std::vector<std::vector<Ty>> Coef_Matriz, std::vector<std::vector<Ty>> vector_indp)
+{
+    if (!is_diagonaldominat(Coef_Matriz))
+    {
+        std::cout << "La matriz no es dominante en sentido diagonal " << std::endl;
+        return Coef_Matriz;
+    }
+
+    std::vector<Ty> init(vector_indp[0].size(), 0);
+    std::vector<std::vector<Ty>> X0(vector_indp.size(), init);
 }
 
 class Menu
@@ -1648,7 +1132,7 @@ private:
 public:
     Menu();
     template <class F>
-    Matriz<F> read_matrix(size_t filas, size_t columnas, bool n); //lee una matriz de n * m y retorna la matriz
+    std::vector<std::vector<F>> read_matrix(size_t filas, size_t columnas, bool n); //lee una matriz de n * m y retorna la matriz
 
     int Main_menu();
 
@@ -1666,6 +1150,10 @@ public:
     void Menu_Metodo_intercambio();
 
     void Menu_metodos_iterativos();
+
+    void Menu_jacobi();
+    void Menu_gaussseidel();
+    void Menu_relajacion();
 
     ~Menu();
 };
@@ -1754,11 +1242,12 @@ bool Menu::read_input(std::string find)
 }
 
 template <class F>
-Matriz<F> Menu::read_matrix(size_t filas, size_t columnas, bool n)
+std::vector<std::vector<F>> Menu::read_matrix(size_t filas, size_t columnas, bool n)
 {
     std::vector<std::string> v;
     std::vector<std::vector<float>> m;
-    Matriz<F> Mat(filas, columnas);
+    std::vector<F> init(columnas, 0);
+    std::vector<std::vector<F>> M(filas, init);
 
     for (size_t i = 0; i < filas; i++)
     {
@@ -1799,7 +1288,7 @@ Matriz<F> Menu::read_matrix(size_t filas, size_t columnas, bool n)
                 {
                     //std::cout << "Insert: " << aux << std::endl;
                     if (aux.find('/') == std::string::npos)
-                        Mat[i][k] = std::stof(aux);
+                        M[i][k] = std::stof(aux);
                     else
                     {
                         float den, nume;
@@ -1813,14 +1302,7 @@ Matriz<F> Menu::read_matrix(size_t filas, size_t columnas, bool n)
                             throw std::invalid_argument("invalid input frac!");
                         }
 
-                        Number frac;
-                        if (n)
-                        {
-                            frac = std::make_pair(nume, den);
-                            //Mat[i][k] = frac;
-                        }
-                        else
-                            Mat[i][k] = nume / den;
+                        M[i][k] = nume / den;
 
                         nu = "";
                         d = "";
@@ -1840,7 +1322,7 @@ Matriz<F> Menu::read_matrix(size_t filas, size_t columnas, bool n)
 
     //Mat.print();
 
-    return Mat;
+    return M;
 }
 
 int Menu::Main_menu()
@@ -2342,7 +1824,7 @@ void Menu::Menu_sistemas_ecuaciones()
             break;
 
         case 2:
-            //this->Menu_metodos_iterativos();
+            this->Menu_metodos_iterativos();
             break;
 
         default:
@@ -2393,6 +1875,9 @@ void Menu::Menu_metodos_exactos()
         case 1:
             this->Menu_inversa_particionado();
             break;
+        case 2:
+            this->Menu_Gausss_JordanP();
+            break;
 
         default:
             break;
@@ -2410,7 +1895,7 @@ void Menu::Menu_inversa_particionado()
 
     do
     {
-        Matriz<float> Mat, vector_indp;
+        std::vector<std::vector<float>> Mat, vector_indp, t;
         std::vector<float> v;
         float determ;
         int siz;
@@ -2450,12 +1935,13 @@ void Menu::Menu_inversa_particionado()
         try
         {
             std::cout << "Matriz de Coeficientes " << std::endl;
-            Mat.print();
+            print<float>(Mat);
+            t = transp(vector_indp);
 
             std::cout << "Vector de terminos independientes " << std::endl;
-            (vector_indp.transp()).print();
+            print<float>(t);
 
-            determ = Mat.Determinante();
+            determ = Determinante(Mat);
         }
         catch (const std::exception &e)
         {
@@ -2464,14 +1950,13 @@ void Menu::Menu_inversa_particionado()
 
         if (determ == 0)
         {
-            std::cout << "La matriz no tiene inversa determinante iguala 0 !" << std::endl;
+            std::cout << "La matriz no tiene solucion determinante iguala 0 !" << std::endl;
         }
         else
         {
             std::cout << "Determinante : " << determ << std::endl;
-            Linear_equation<float> X(Mat, vector_indp);
-            if (Mat.size_f() > 1)
-                X.Inverse_partition(1, 1);
+            if (Mat.size() >= 4)
+                Inverse_partition(Mat, t, 2, 2);
         }
 
         std::cout << "¿Deseas probar otra matriz?(S/N) : ";
@@ -2482,11 +1967,13 @@ void Menu::Menu_inversa_particionado()
 
 void Menu::Menu_Gausss_JordanP()
 {
-    Matriz<float> Mat, vector_indp;
-    std::vector<float> v;
-    int siz;
     do
     {
+        std::vector<std::vector<float>> Mat, vector_indp, t;
+        std::vector<float> v;
+        float determ;
+        int siz;
+        std::system(LIMPIAR);
         std::cout << "Ingrese el tamaño de la matriz(un solo numero sin espacios) : ";
         v = this->readNumeric_input(1);
         do
@@ -2519,11 +2006,32 @@ void Menu::Menu_Gausss_JordanP()
 
         } while (1);
 
-        std::cout << "Coef" << std::endl;
-        Mat.print();
+        try
+        {
+            std::cout << "Matriz de Coeficientes " << std::endl;
+            print<float>(Mat);
+            t = transp(vector_indp);
 
-        std::cout << "indp" << std::endl;
-        vector_indp.print();
+            std::cout << "Vector de terminos independientes " << std::endl;
+            print<float>(t);
+
+            determ = Determinante(Mat);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+
+        if (determ == 0)
+        {
+            std::cout << "La matriz no tiene solucion determinante iguala 0 !" << std::endl;
+        }
+        else
+        {
+            std::cout << "Determinante : " << determ << std::endl;
+            if (Mat.size() >= 4)
+                Gauss_partition(Mat, t, 2, 2);
+        }
 
         std::cout << "¿Deseas probar otra matriz?(S/N) : ";
         if (!this->read_input("s"))
@@ -2533,53 +2041,59 @@ void Menu::Menu_Gausss_JordanP()
 
 void Menu::Menu_Metodo_intercambio()
 {
-    Matriz<float> Mat, vector_indp;
-    std::vector<float> v;
-    int siz;
+}
+
+void Menu::Menu_metodos_iterativos()
+{
     do
     {
-        std::cout << "Ingrese el tamaño de la matriz(un solo numero sin espacios) : ";
-        v = this->readNumeric_input(1);
+        std::system(LIMPIAR);
+        std::cout << "------------------------------------------------------------" << std::endl;
+        std::cout << "|                SISTEMAS DE ECUACIONES                    |" << std::endl;
+        std::cout << "------------------------------------------------------------" << std::endl;
+        std::cout << "| 1 . METODO DE JACOBI                                     |" << std::endl;
+        std::cout << "|----------------------------------------------------------|" << std::endl;
+        std::cout << "| 2 . METODO DE GAUSS-SEIDEL                               |" << std::endl;
+        std::cout << "|----------------------------------------------------------|" << std::endl;
+        std::cout << "| 3 . METODO DE RELAJACION                                 |" << std::endl;
+        std::cout << "------------------------------------------------------------" << std::endl;
+
+        std::vector<float> v;
+        int op;
         do
         {
-            std::cout << "Ingresa La matriz de coeficientes : " << std::endl;
-            try
+
+            std::cout << "Ingrese una opcion del menu(numero): "; // << std::endl;
+
+            v = this->readNumeric_input(1);
+
+            if (v.size() >= 1 && ((((int)v[0]) >= 1) && (((int)v[0]) <= 3)))
             {
-                Mat = this->read_matrix<float>(((int)v[0]), ((int)v[0]), false);
                 break;
             }
-            catch (const std::exception &e)
-            {
-                std::cout << "Invalid Input try again :(" << std::endl;
-            }
-
         } while (1);
 
-        do
+        this->op_metodos_Exactos = ((int)v[0]);
+
+        switch (((int)v[0])) //Metodo seleccionado
         {
-            std::cout << "Ingrese el vector de terminos independientes(en forma horizontal): " << std::endl;
-            try
-            {
-                vector_indp = this->read_matrix<float>(1, ((int)v[0]), false);
-                break;
-            }
-            catch (const std::exception &e)
-            {
-                std::cout << "Invalid Input try again :(" << std::endl;
-            }
+        case 1:
+            this->Menu_jacobi();
+            break;
 
-        } while (1);
+        default:
+            break;
+        }
 
-        std::cout << "Coef" << std::endl;
-        Mat.print();
-
-        std::cout << "indp" << std::endl;
-        vector_indp.print();
-
-        std::cout << "¿Deseas probar otra matriz?(S/N) : ";
+        std::cout << "¿Deseas probar otro metodo?(S/N) : ";
         if (!this->read_input("s"))
             break;
+
     } while (1);
+}
+
+void Menu::Menu_jacobi()
+{
 }
 
 Menu::~Menu()
