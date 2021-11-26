@@ -598,7 +598,7 @@ std::vector<std::vector<Ty>> Jacobi(std::vector<std::vector<Ty>> Coef_Matriz, st
     std::vector<std::vector<Ty>> X0(vector_indp.size(), init);
 
     std::vector<Ty> ini(vector_indp[0].size(), 0);
-    std::vector<std::vector<Ty>> X1(vector_indp.size(), init);
+    std::vector<std::vector<Ty>> X1(vector_indp.size(), init), Comp;
 
     for (int i = 0; i < vector_indp.size(); i++)
         std::cout << "X" << i + 1 << "\t";
@@ -636,8 +636,10 @@ std::vector<std::vector<Ty>> Jacobi(std::vector<std::vector<Ty>> Coef_Matriz, st
         if (flag)
             break;
     }
+    Comp = Mult<Ty>(Coef_Matriz, X1);
 
-    return vector_indp;
+    print<Ty>(Comp);
+    return X1;
 }
 
 int main(int argc, char const *argv[])
@@ -674,7 +676,7 @@ int main(int argc, char const *argv[])
     print<float>(t);
     print<float>(X);
 
-    Jacobi(M, t, 0.00001);
+    Jacobi(M, t, 0.0001);
 
     return 0;
 }
