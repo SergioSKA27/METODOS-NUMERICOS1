@@ -586,7 +586,7 @@ bool is_diagonaldominat(std::vector<std::vector<Ty>> Coef_Matriz)
 }
 
 template <class Ty>
-std::vector<std::vector<Ty>> Jacobi(std::vector<std::vector<Ty>> Coef_Matriz, std::vector<std::vector<Ty>> vector_indp)
+std::vector<std::vector<Ty>> Jacobi(std::vector<std::vector<Ty>> Coef_Matriz, std::vector<std::vector<Ty>> vector_indp, float error)
 {
     if (!is_diagonaldominat(Coef_Matriz))
     {
@@ -597,11 +597,45 @@ std::vector<std::vector<Ty>> Jacobi(std::vector<std::vector<Ty>> Coef_Matriz, st
     std::vector<Ty> init(vector_indp[0].size(), 0);
     std::vector<std::vector<Ty>> X0(vector_indp.size(), init);
 
+    std::vector<Ty> ini(vector_indp[0].size(), 0);
+    std::vector<std::vector<Ty>> X1(vector_indp.size(), init);
+
     for (int i = 0; i < vector_indp.size(); i++)
         std::cout << "X" << i + 1 << "\t";
     std::cout << std::endl;
 
     print<Ty>(transp(X0));
+
+    while (1)
+    {
+        for (size_t i = 0; i < vector_indp.size(); i++)
+        {
+            X1[i][0] = (1 / Coef_Matriz[i][i]);
+
+            Ty sum = 0;
+
+            for (size_t j = 0; j < vector_indp.size(); j++)
+            {
+                if (j != i)
+                    sum += Coef_Matriz[i][j] * X0[j][0];
+            }
+
+            X1[i][0] = X1[i][0] * (vector_indp[i][0] - sum);
+        }
+
+        print<Ty>(transp(X1));
+
+        bool flag = true;
+
+        for (size_t i = 0; i < vector_indp.size(); i++)
+        {
+            if (std::abs(X1[i][0] - X0[i][0]) > error)
+                flag = false;
+        }
+        X0 = X1;
+        if (flag)
+            break;
+    }
 
     return vector_indp;
 }
@@ -640,7 +674,7 @@ int main(int argc, char const *argv[])
     print<float>(t);
     print<float>(X);
 
-    Jacobi(M, t);
+    Jacobi(M, t, 0.00001);
 
     return 0;
 }
