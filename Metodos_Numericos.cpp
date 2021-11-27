@@ -1089,7 +1089,7 @@ bool is_diagonaldominat(std::vector<std::vector<Ty>> Coef_Matriz)
 }
 
 template <class Ty>
-std::vector<std::vector<Ty>> Jacobi(std::vector<std::vector<Ty>> Coef_Matriz, std::vector<std::vector<Ty>> vector_indp)
+std::vector<std::vector<Ty>> Jacobi(std::vector<std::vector<Ty>> Coef_Matriz, std::vector<std::vector<Ty>> vector_indp, float error)
 {
     if (!is_diagonaldominat(Coef_Matriz))
     {
@@ -1099,6 +1099,315 @@ std::vector<std::vector<Ty>> Jacobi(std::vector<std::vector<Ty>> Coef_Matriz, st
 
     std::vector<Ty> init(vector_indp[0].size(), 0);
     std::vector<std::vector<Ty>> X0(vector_indp.size(), init);
+
+    std::vector<Ty> ini(vector_indp[0].size(), 0);
+    std::vector<std::vector<Ty>> X1(vector_indp.size(), init), Comp;
+
+    for (int i = 0; i < vector_indp.size(); i++)
+        std::cout << "X" << i + 1 << "\t";
+    std::cout << std::endl;
+
+    print<Ty>(transp(X0));
+
+    while (1)
+    {
+        for (size_t i = 0; i < vector_indp.size(); i++)
+        {
+            X1[i][0] = (1 / Coef_Matriz[i][i]);
+
+            Ty sum = 0;
+
+            for (size_t j = 0; j < vector_indp.size(); j++)
+            {
+                if (j != i)
+                    sum += Coef_Matriz[i][j] * X0[j][0];
+            }
+
+            X1[i][0] = X1[i][0] * (vector_indp[i][0] - sum);
+        }
+
+        print<Ty>(transp(X1));
+
+        bool flag = true;
+
+        for (size_t i = 0; i < vector_indp.size(); i++)
+        {
+            if (std::abs(X1[i][0] - X0[i][0]) > error)
+                flag = false;
+        }
+        X0 = X1;
+        if (flag)
+            break;
+    }
+    Comp = Mult<Ty>(Coef_Matriz, X1);
+    std::cout << "Comprobacion" << std::endl;
+    print<Ty>(Comp);
+    return X1;
+}
+
+template <class Ty>
+std::vector<std::vector<Ty>> GaussSeidel(std::vector<std::vector<Ty>> Coef_Matriz, std::vector<std::vector<Ty>> vector_indp, float error)
+{
+    if (!is_diagonaldominat(Coef_Matriz))
+    {
+        std::cout << "La matriz no es dominante en sentido diagonal " << std::endl;
+        return Coef_Matriz;
+    }
+
+    std::vector<Ty> init(vector_indp[0].size(), 0);
+    std::vector<std::vector<Ty>> X0(vector_indp.size(), init);
+
+    std::vector<Ty> ini(vector_indp[0].size(), 0);
+    std::vector<std::vector<Ty>> X1(vector_indp.size(), init), Comp;
+
+    for (int i = 0; i < vector_indp.size(); i++)
+        std::cout << "X" << i + 1 << "\t";
+    std::cout << std::endl;
+
+    print<Ty>(transp(X0));
+
+    while (1)
+    {
+        for (size_t i = 0; i < vector_indp.size(); i++)
+        {
+            X1[i][0] = (1 / Coef_Matriz[i][i]);
+
+            Ty sum = 0, sum2 = 0;
+
+            for (size_t j = 0; j < i; j++)
+            {
+                if (j != i)
+                    sum += Coef_Matriz[i][j] * X1[j][0];
+            }
+            for (size_t k = i + 1; k < vector_indp.size(); k++)
+            {
+                if (k != i)
+                    sum2 += Coef_Matriz[i][k] * X0[k][0];
+            }
+
+            X1[i][0] = X1[i][0] * (vector_indp[i][0] - sum - sum2);
+        }
+
+        print<Ty>(transp(X1));
+
+        bool flag = true;
+
+        for (size_t i = 0; i < vector_indp.size(); i++)
+        {
+            if (std::abs(X1[i][0] - X0[i][0]) > error)
+                flag = false;
+        }
+        X0 = X1;
+        if (flag)
+            break;
+    }
+    Comp = Mult<Ty>(Coef_Matriz, X1);
+
+    std::cout << "Comprobacion" << std::endl;
+    print<Ty>(Comp);
+    return X1;
+}
+
+template <class Ty>
+std::vector<std::vector<Ty>> Sustitucion_adelante(std::vector<std::vector<Ty>> L, std::vector<std::vector<Ty>> vector_indp)
+{
+    std::vector<Ty> init(vector_indp[0].size(), 0);
+    std::vector<std::vector<Ty>> C(vector_indp.size(), init);
+
+    for (size_t i = 0; i < vector_indp.size(); i++)
+    {
+        for (size_t j = 0; j < vector_indp.size(); j++)
+        {
+            C[i][0] = vector_indp[i][0] / L[i][i];
+
+            if (i - 1 >= 0 && i != j)
+                C[i][0] += -((C[j][0] * L[i][j]) / L[i][i]);
+        }
+    }
+
+    return C;
+}
+
+template <class Ty>
+std::vector<std::vector<Ty>> Sustitucion_atras(std::vector<std::vector<Ty>> U, std::vector<std::vector<Ty>> vector_indp, std::vector<std::vector<Ty>> C)
+{
+    std::vector<Ty> init(vector_indp[0].size(), 0);
+    std::vector<std::vector<Ty>> X(vector_indp.size(), init);
+
+    for (size_t i = vector_indp.size() - 1; i >= 0; i++)
+    {
+        for (size_t j = vector_indp.size() - 1; j >= 0; j++)
+        {
+            X[i][0] = C[i][0] / U[i][i];
+
+            if (i + 1 <= vector_indp.size() - 1 && i != j)
+                C[i][0] += -((C[j][0] * U[i][j]) / U[i][i]);
+        }
+    }
+
+    return X;
+}
+template <class Ty>
+bool is_positive(std::vector<std::vector<Ty>> U)
+{
+    bool f = true;
+
+    for (size_t i = 1; i <= U.size(); i++)
+    {
+        std::vector<Ty> init(i, 0);
+        std::vector<std::vector<Ty>> X(i, init);
+
+        for (size_t j = 0; j < i; j++)
+        {
+            for (size_t k = 0; k < i; k++)
+            {
+                X[j][k] = U[j][k];
+            }
+        }
+
+        if (Determinante(U) > 0)
+            continue;
+        else
+        {
+            f = false;
+            break;
+        }
+    }
+
+    return f;
+}
+
+template <class Ty>
+bool is_simetric(std::vector<std::vector<Ty>> U)
+{
+    std::vector<std::vector<Ty>> T;
+    bool f = true;
+
+    T = transp(U);
+
+    //print<Ty>(U);
+    //print<Ty>(T);
+
+    for (size_t i = 0; i < U.size(); i++)
+    {
+        for (size_t j = 0; j < U.size(); j++)
+        {
+            if (T[i][j] == U[i][j])
+            {
+                f = true;
+            }
+            else
+            {
+                f = false;
+                break;
+            }
+        }
+    }
+
+    return f;
+}
+
+template <class Ty>
+std::vector<std::vector<Ty>> cholesky(std::vector<std::vector<Ty>> U, std::vector<std::vector<Ty>> vector_indp)
+{
+    // Decomposing a matrix into Lower Triangular
+    std::vector<Ty> init(U[0].size(), 0);
+    std::vector<std::vector<Ty>> lower(U.size(), init);
+    std::vector<std::vector<Ty>> ltranpose;
+
+    //if (!is_positive(U))
+    //{
+    //    std::cout << "La matriz no esta definida positivamente!" << std::endl;
+    //    return U;
+    //}
+
+    //if (!is_simetric(U))
+    //{
+    //    std::cout << "La matriz no es simetrica!" << std::endl;
+    //    return U;
+    //}
+
+    for (int i = 0; i < U.size(); i++)
+    {
+        for (int j = 0; j <= i; j++)
+        {
+            Ty sum = 0;
+
+            if (j == i) // summation for diagonals
+            {
+                for (int k = 0; k < j; k++)
+                    sum += pow(lower[j][k], 2);
+                lower[j][j] = sqrt(U[j][j] - sum);
+            }
+            else
+            {
+
+                // Evaluating L(i, j) using L(j, j)
+                for (int k = 0; k < j; k++)
+                    sum += (lower[i][k] * lower[j][k]);
+                lower[i][j] = (U[i][j] - sum) / lower[j][j];
+            }
+        }
+    }
+
+    ltranpose = transp(lower);
+    std::cout << "L " << std::endl;
+    print<Ty>(lower);
+
+    std::cout << "U " << std::endl;
+    print<Ty>(ltranpose);
+
+    return U;
+}
+
+template <class Ty>
+std::vector<std::vector<Ty>> Doolittle(std::vector<std::vector<Ty>> mat, std::vector<std::vector<Ty>> vector_indp)
+{
+    // Decomposing a matrix into Lower Triangular
+    std::vector<Ty> init(mat[0].size(), 0);
+    std::vector<std::vector<Ty>> lower(mat.size(), init);
+    std::vector<Ty> in(mat[0].size(), 0);
+    std::vector<std::vector<Ty>> upper(mat.size(), init);
+
+    for (int i = 0; i < mat.size(); i++)
+    {
+        // Upper Triangular
+        for (int k = i; k < mat.size(); k++)
+        {
+            // Summation of L(i, j) * U(j, k)
+            Ty sum = 0;
+            for (int j = 0; j < i; j++)
+                sum += (lower[i][j] * upper[j][k]);
+
+            // Evaluating U(i, k)
+            upper[i][k] = mat[i][k] - sum;
+        }
+
+        // Lower Triangular
+        for (int k = i; k < mat.size(); k++)
+        {
+            if (i == k)
+                lower[i][i] = 1; // Diagonal as 1
+            else
+            {
+                // Summation of L(k, j) * U(j, i)
+                Ty sum = 0;
+                for (int j = 0; j < i; j++)
+                    sum += (lower[k][j] * upper[j][i]);
+
+                // Evaluating L(k, i)
+                lower[k][i] = (mat[k][i] - sum) / upper[i][i];
+            }
+        }
+    }
+
+    std::cout << "L " << std::endl;
+    print<Ty>(lower);
+
+    std::cout << "U " << std::endl;
+    print<Ty>(upper);
+
+    return mat;
 }
 
 class Menu
@@ -1125,6 +1434,8 @@ private:
     int op_submenu_2; //Sub menu sistemas de ecuaciones
     int op_metodos_Exactos;
     int op_metodos_iter;
+
+    int op_submenu3;
 
     std::vector<float> readNumeric_input(int argsN); //lee una linea y la retorna como un string
     bool read_input(std::string find);               // lee un input y busca una subcadena(find) retorna true si existe una ocurrencia
@@ -1155,6 +1466,10 @@ public:
     void Menu_gaussseidel();
     void Menu_relajacion();
 
+    void Menu_factorizacionLU();
+    void Menu_cholesky();
+    void Menu_Doolittle();
+
     ~Menu();
 };
 
@@ -1183,7 +1498,7 @@ std::vector<float> Menu::readNumeric_input(int argsN)
     {
 
         //std::cout << line[i] << std::endl;
-        if ((line[i] - '0' >= 0 && line[i] - '0' <= 9) || (line[i] == '.'))
+        if ((line[i] - '0' >= 0 && line[i] - '0' <= 9) || (line[i] == '.') || (line[i] == '-'))
         {
             s += line[i];
         }
@@ -1370,6 +1685,9 @@ int Menu::Main_menu()
         break;
     case 2:
         this->Menu_sistemas_ecuaciones();
+    case 3:
+        this->Menu_factorizacionLU();
+        break;
     default:
         break;
     }
@@ -2094,6 +2412,349 @@ void Menu::Menu_metodos_iterativos()
 
 void Menu::Menu_jacobi()
 {
+
+    do
+    {
+        std::vector<std::vector<float>> Mat, vector_indp, t;
+        std::vector<float> v, error;
+        float determ;
+        int siz;
+        std::system(LIMPIAR);
+        std::cout << "Ingrese el tamaño de la matriz(un solo numero sin espacios) : ";
+        v = this->readNumeric_input(1);
+        do
+        {
+            std::cout << "Ingresa La matriz de coeficientes : " << std::endl;
+            try
+            {
+                Mat = this->read_matrix<float>(((int)v[0]), ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        do
+        {
+            std::cout << "Ingrese el vector de terminos independientes(en forma horizontal): " << std::endl;
+            try
+            {
+                vector_indp = this->read_matrix<float>(1, ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        std::cout << "Ingrese el error de tolerancia" << std::endl;
+        error = this->readNumeric_input(1);
+
+        try
+        {
+            std::cout << "Matriz de Coeficientes " << std::endl;
+            print<float>(Mat);
+            t = transp(vector_indp);
+
+            std::cout << "Vector de terminos independientes " << std::endl;
+            print<float>(t);
+
+            determ = Determinante(Mat);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+
+        if (determ == 0)
+        {
+            std::cout << "La matriz no tiene solucion determinante iguala 0 !" << std::endl;
+        }
+        else
+        {
+            std::cout << "Determinante : " << determ << std::endl;
+            Jacobi(Mat, t, error[0]);
+        }
+
+        std::cout << "¿Deseas probar otra matriz?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
+    } while (1);
+}
+
+void Menu::Menu_gaussseidel()
+{
+
+    do
+    {
+        std::vector<std::vector<float>> Mat, vector_indp, t;
+        std::vector<float> v, error;
+        float determ;
+        int siz;
+        std::system(LIMPIAR);
+        std::cout << "Ingrese el tamaño de la matriz(un solo numero sin espacios) : ";
+        v = this->readNumeric_input(1);
+        do
+        {
+            std::cout << "Ingresa La matriz de coeficientes : " << std::endl;
+            try
+            {
+                Mat = this->read_matrix<float>(((int)v[0]), ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        do
+        {
+            std::cout << "Ingrese el vector de terminos independientes(en forma horizontal): " << std::endl;
+            try
+            {
+                vector_indp = this->read_matrix<float>(1, ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        std::cout << "Ingrese el error de tolerancia" << std::endl;
+        error = this->readNumeric_input(1);
+
+        try
+        {
+            std::cout << "Matriz de Coeficientes " << std::endl;
+            print<float>(Mat);
+            t = transp(vector_indp);
+
+            std::cout << "Vector de terminos independientes " << std::endl;
+            print<float>(t);
+
+            determ = Determinante(Mat);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+
+        if (determ == 0)
+        {
+            std::cout << "La matriz no tiene solucion determinante iguala 0 !" << std::endl;
+        }
+        else
+        {
+            std::cout << "Determinante : " << determ << std::endl;
+            GaussSeidel(Mat, t, error[0]);
+        }
+
+        std::cout << "¿Deseas probar otra matriz?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
+    } while (1);
+}
+
+void Menu::Menu_factorizacionLU()
+{
+    do
+    {
+        std::system(LIMPIAR);
+        std::cout << "------------------------------------------------------------" << std::endl;
+        std::cout << "|            FACTORIZACION LU                              |" << std::endl;
+        std::cout << "------------------------------------------------------------" << std::endl;
+        std::cout << "| 1 . METODO DE CHOLESKY                                   |" << std::endl;
+        std::cout << "|----------------------------------------------------------|" << std::endl;
+        std::cout << "| 2 . METODOS DOOLITTLE                                    |" << std::endl;
+        std::cout << "|----------------------------------------------------------|" << std::endl;
+        std::cout << "| 3 . METODOS CROUT                                        |" << std::endl;
+        std::cout << "------------------------------------------------------------" << std::endl;
+
+        std::vector<float> v;
+        do
+        {
+
+            std::cout << "Ingrese una opcion del menu(numero): "; // << std::endl;
+
+            v = this->readNumeric_input(1);
+
+            if (v.size() >= 1 && ((((int)v[0]) >= 1) && (((int)v[0]) <= 3)))
+            {
+                break;
+            }
+        } while (1);
+
+        this->op_submenu_2 = ((int)v[0]);
+
+        switch (((int)v[0])) //Metodo seleccionado
+        {
+        case 1:
+            this->Menu_cholesky();
+            break;
+
+        case 2:
+            this->Menu_Doolittle();
+            break;
+
+        default:
+            break;
+        }
+
+        std::cout << "¿Deseas volver al menu anterior?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
+
+    } while (1);
+}
+
+void Menu::Menu_cholesky()
+{
+
+    do
+    {
+        std::vector<std::vector<float>> Mat, vector_indp, t;
+        std::vector<float> v;
+        float determ;
+        int siz;
+        std::system(LIMPIAR);
+        std::cout << "Ingrese el tamaño de la matriz(un solo numero sin espacios) : ";
+        v = this->readNumeric_input(1);
+        do
+        {
+            std::cout << "Ingresa La matriz de coeficientes : " << std::endl;
+            try
+            {
+                Mat = this->read_matrix<float>(((int)v[0]), ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        do
+        {
+            std::cout << "Ingrese el vector de terminos independientes(en forma horizontal): " << std::endl;
+            try
+            {
+                vector_indp = this->read_matrix<float>(1, ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        try
+        {
+            std::cout << "Matriz de Coeficientes " << std::endl;
+            print<float>(Mat);
+            t = transp(vector_indp);
+
+            std::cout << "Vector de terminos independientes " << std::endl;
+            print<float>(t);
+
+            //determ = Determinante(Mat);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+
+        if (is_simetric(Mat) == false || is_positive(Mat) == false)
+        {
+            std::cout << "No se puede aplicar el metodo!" << std::endl;
+        }
+        else
+        {
+            //std::cout << "Determinante : " << determ << std::endl;
+            cholesky<float>(Mat, t);
+        }
+
+        std::cout << "¿Deseas probar otra matriz?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
+    } while (1);
+}
+
+void Menu::Menu_Doolittle()
+{
+
+    do
+    {
+        std::vector<std::vector<float>> Mat, vector_indp, t;
+        std::vector<float> v;
+        float determ;
+        int siz;
+        std::system(LIMPIAR);
+        std::cout << "Ingrese el tamaño de la matriz(un solo numero sin espacios) : ";
+        v = this->readNumeric_input(1);
+        do
+        {
+            std::cout << "Ingresa La matriz de coeficientes : " << std::endl;
+            try
+            {
+                Mat = this->read_matrix<float>(((int)v[0]), ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        do
+        {
+            std::cout << "Ingrese el vector de terminos independientes(en forma horizontal): " << std::endl;
+            try
+            {
+                vector_indp = this->read_matrix<float>(1, ((int)v[0]), false);
+                break;
+            }
+            catch (const std::exception &e)
+            {
+                std::cout << "Invalid Input try again :(" << std::endl;
+            }
+
+        } while (1);
+
+        try
+        {
+            std::cout << "Matriz de Coeficientes " << std::endl;
+            print<float>(Mat);
+            t = transp(vector_indp);
+
+            std::cout << "Vector de terminos independientes " << std::endl;
+            print<float>(t);
+
+            //determ = Determinante(Mat);
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << e.what() << '\n';
+        }
+
+        //std::cout << "Determinante : " << determ << std::endl;
+        Doolittle<float>(Mat, t);
+
+        std::cout << "¿Deseas probar otra matriz?(S/N) : ";
+        if (!this->read_input("s"))
+            break;
+    } while (1);
 }
 
 Menu::~Menu()
@@ -2108,19 +2769,6 @@ int main(int argc, char const *argv[])
     while (1)
         if (m.Main_menu() == 4)
             break;
-    //Matriz<float> A(5), B(1, 5, 1);
-    //A = m.read_matrix<float>(5, 5, false);
-
-    //Linear_equation<float> X(A, B);
-    //X.Inverse_partition(2, 2);
-
-    //A.adj().print();
-    //std::cout << "Inv" << std::endl;
-    //A.inversa().print();
-
-    //A.extrac_partition(1, 1, 2, 2).print();
-
-    //std::cout << A.Determinante() << std::endl;
 
     return 0;
 }
